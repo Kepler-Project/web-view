@@ -1,0 +1,26 @@
+<html>
+<head>
+  <link rel="stylesheet" href="/web-view/lib/style.css">
+</head>
+<body style="height:auto;">
+  <div id="control" class="control" title="Control" style="width:100%;">
+      <ul>
+        <li id="run-button" class="control-button" onclick="run()">Run</li>
+        <li id="stop-button" class="control-button" onclick="stop()">Stop</li>
+      </ul>
+  </div>
+  <script>
+    function resize(w, h) { }
+
+    function run() { 
+      // TODO disable while running
+      sendOutput("event", "run");
+    }
+    
+    function stop() { 
+      // TODO disable until running
+      sendOutput("event", "stop");
+    }
+  </script>
+</body>
+</html>

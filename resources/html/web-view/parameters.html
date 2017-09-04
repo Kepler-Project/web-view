@@ -1,0 +1,98 @@
+<html>
+<head>
+  <link rel="stylesheet" href="/web-view/lib/style.css">
+  <link href="/web-view/nouislider/nouislider.min.css" rel="stylesheet"/>
+</head>
+<body>
+  <div id="parameters" class="parameters" style="height:100%; width:100%;">
+  </div>
+<script src="/web-view/nouislider/nouislider.min.js"></script>
+<script>
+
+  var options = {};
+  var sliders = [];
+  var texts = [];
+
+  function resize(w, h) { }
+    
+  function setOption(name, value) {
+    console.log('got option ' + name + ': ' + JSON.stringify(value));
+    options[name] = value;
+  }
+
+  function initialize() {
+    var tableStr = "<table>";
+    var names = [];
+    for(var name in options) {
+      names.push(name);
+    }
+    names.sort();
+    for(var i = 0; i < names.length; i++) {
+      var name = names[i];
+      tableStr += "<tr><td class='col-name'><b>" + name + "</b></td>";
+      if(options[name].datatype == 'num' &&
+        options[name].hasOwnProperty('max') &&
+        options[name].hasOwnProperty('min')) {
+        tableStr += "<td class='col-value'><div id='slider-" + name + "'></div>" +
+          "<div id='value-" + name + "'></div></td></tr>";
+        sliders.push(name);
+      } else {
+        tableStr += "<td class='col-value'><input type='text' " +
+          "id='text-" + name + "' " +
+          "value='" + options[name].value + "'></td></tr>";
+        texts.push(name);
+      }
+    }
+    tableStr += "</table>";
+    document.getElementById('parameters').innerHTML = tableStr;
+   
+    for(var i = 0; i < texts.length; i++) {
+      var name = texts[i];
+      textOnUpdate(name);
+    }
+
+    for(var i = 0; i < sliders.length; i++) {
+      var name = sliders[i];
+      var sliderOptions = {
+        'connect': 'lower',
+        'range': {
+          'max': Number(options[name].max),
+          'min': Number(options[name].min)
+        },
+        'start': options[name].value
+      };
+      if(options[name].hasOwnProperty('step')) {
+        sliderOptions.step = Number(options[name].step);
+      }
+      
+      var slider = document.getElementById('slider-' + name);
+      noUiSlider.create(slider, sliderOptions);
+      sliderOnUpdate(name, slider);
+    }
+  }
+  
+  function sliderOnUpdate(name, slider) {
+    var valueDiv = document.getElementById('value-' + name);
+    slider.noUiSlider.on('update', function(values, handle) {
+      valueDiv.innerHTML = values[handle];
+      // see if the value changed
+      if(options[name].value != values[handle]) {
+        options[name].value = values[handle];
+        sendOptions(name, values[handle]);
+      }
+    });
+  }
+
+  function textOnUpdate(name) {
+    var text = document.getElementById('text-' + name);
+    text.onchange = function() {
+      // see if the value changed
+      if(text.value != options[name].value) {
+        options[name].value = text.value;
+        sendOptions(name, text.value);
+      }
+    };
+  }
+</script>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<html>
+<head>
+<style>
+#text {
+    font-family: Arial, Helvetica, sans-serif;
+    font-size: 200px;
+    text-align: center;
+    -webkit-transition: color 3s ease;
+    position: relative;
+    top: 50%;
+    -webkit-transform: translateY(-50%);
+}
+
+body {
+    -webkit-transition: background-color 3s ease;
+}
+
+div {
+    width:500px;
+    height:500px;
+}
+</style>
+</head>
+<body>
+<div id="text" onclick="sendOutput('out', 'Hi!')">Click to send</div>
+
+<script>
+
+function changeColor() {
+  var r = Math.floor(Math.random() * (256));
+  var g = Math.floor(Math.random() * (256));
+  var b = Math.floor(Math.random() * (256));
+  document.getElementById("text").style.color =
+    'rgb(' + r + ',' + g + ',' + b + ')';
+  
+  r = Math.floor(Math.random() * (256));
+  g = Math.floor(Math.random() * (256));
+  b = Math.floor(Math.random() * (256));
+  document.body.style.background = 'rgb(' + r + ',' + g + ',' + b + ')';
+}
+
+document.body.onload=function() {
+  changeColor();
+  //setInterval(changeColor, 3000);
+}
+</script>
+</body>
+</html>

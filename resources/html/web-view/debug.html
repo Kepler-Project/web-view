@@ -1,0 +1,45 @@
+<html>
+  <link rel="stylesheet" href="/web-view/lib/style.css">
+<body>
+<div id="text" style="width:100%; height:100%;"><pre></pre></div>
+
+<script>
+
+function update(text) {
+  document.getElementById("text")
+    .getElementsByTagName("pre")[0]
+    .innerHTML += text + '\n';
+}
+
+function setInput(name, text) {
+  var str = 'received input ' + name + ': ' + text;
+  update(str);
+}
+
+function setOption(name, value) {
+  update('option ' + name + ' = ' + value);
+}
+
+function initialize() {
+  document.getElementById("text")
+    .getElementsByTagName("pre")[0]
+    .innerHTML += 'initialize\n';
+}
+
+function wfEvent(e) {
+  var str = JSON.stringify(e);
+  if(e.type == 'wf_start' || e.type == 'wf_end') {
+    update('received workflow event: ' + str);
+  } else {
+    update('received actor event: ' + str);
+  }
+}
+
+function resize(w, h) {
+  update('resize ' + w + ' ' + h);
+  //document.getElementById("text").style.width = w;
+  //document.getElementById("text").style.height = h;
+}
+</script>
+</body>
+</html>

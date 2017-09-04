@@ -1,0 +1,273 @@
+<!doctype html>
+<head>
+  <link type="text/css" rel="stylesheet" href="/web-view/lib/jquery-ui.min-1.11.4.css">
+  <link type="text/css" rel="stylesheet" href="/web-view/rickshaw/rickshaw.css">
+  <link type="text/css" rel="stylesheet" href="/web-view/rickshaw/extensions.css?v=2">
+  <script src="/web-view/lib/d3.v3.js"></script>
+  <script src="/web-view/lib/jquery-1.10.2.js"></script>
+  <script>
+    jQuery.noConflict();
+  </script>
+  <script src="/web-view/lib/jquery-ui.min-1.11.4.js"></script>
+  <script src="/web-view/rickshaw/rickshaw.js"></script>
+  <script src="/web-view/rickshaw/extensions.js"></script>
+</head>
+<body>
+<div id="content" style="width:1200px; height:600px;">
+  <form id="side_panel">
+    <section><div id="legend"></div></section>
+    <section>
+      <div id="renderer_form" class="toggler">
+        <input type="radio" name="renderer" id="line" value="line" checked>
+        <label for="line">line</label>
+        <input type="radio" name="renderer" id="area" value="area">
+        <label for="area">area</label>
+        <input type="radio" name="renderer" id="bar" value="bar">
+        <label for="bar">bar</label>
+        <input type="radio" name="renderer" id="scatter" value="scatterplot">
+        <label for="scatter">scatter</label>
+      </div>
+    </section>
+    <section>
+      <div id="offset_form">
+        <label for="value">
+          <input type="radio" name="offset" id="value" value="value" checked>
+          <span>value</span>
+        </label>
+        <label for="stack">
+          <input type="radio" name="offset" id="stack" value="zero">
+          <span>stack</span>
+        </label>
+        <label for="stream">
+          <input type="radio" name="offset" id="stream" value="wiggle">
+          <span>stream</span>
+        </label>
+        <label for="pct">
+          <input type="radio" name="offset" id="pct" value="expand">
+          <span>pct</span>
+        </label>
+      </div>
+      <div id="interpolation_form">
+        <label for="cardinal">
+          <input type="radio" name="interpolation" id="cardinal" value="cardinal" checked>
+          <span>cardinal</span>
+        </label>
+        <label for="linear">
+          <input type="radio" name="interpolation" id="linear" value="linear">
+          <span>linear</span>
+        </label>
+        <label for="step">
+          <input type="radio" name="interpolation" id="step" value="step-after">
+          <span>step</span>
+        </label>
+      </div>
+    </section>
+    <section></section>
+  </form>
+
+  <div id="chart_container">
+    <!--<div id="title" class="title" style="text-align:-webkit-center; text-align:center; ">Title</div>-->
+    <div id="chart"></div>
+    <div id="timeline"></div>
+    <div id="preview"></div>
+  </div>
+
+</div>
+
+</script>
+<script>
+
+var graphSeries = [];
+var seriesData = {};
+
+var palette = new Rickshaw.Color.Palette( { scheme: 'colorwheel' } );
+var graph = null;
+var legend = null;
+
+function createGraph() {
+
+    graph = new Rickshaw.Graph( {
+      element: document.getElementById("chart"),
+      // NOTE: this width, height is manually adjusted based on the
+      // size of the "content" div.
+      width: 935,
+      height: 560,
+      renderer: 'line',
+      stroke: true,
+      preserve: true,
+      series: graphSeries,
+      min: 'auto'
+    } );
+    
+    graph.render();
+    
+    var preview = new Rickshaw.Graph.RangeSlider( {
+      graph: graph,
+      element: document.getElementById('preview'),
+    } );
+    
+    var hoverDetail = new Rickshaw.Graph.HoverDetail( {
+      graph: graph,
+        /*
+      xFormatter: function(x) {
+        return new Date(x * 1000).toString();
+      }
+        */
+    } );
+    
+    var annotator = new Rickshaw.Graph.Annotate( {
+      graph: graph,
+      element: document.getElementById('timeline')
+    } );
+    
+    legend = new Rickshaw.Graph.Legend({
+      graph: graph,
+      element: document.getElementById('legend')
+    });
+    //console.log('created legend');
+    
+    var order = new Rickshaw.Graph.Behavior.Series.Order( {
+      graph: graph,
+      legend: legend
+    } );
+    
+    var highlighter = new Rickshaw.Graph.Behavior.Series.Highlight( {
+      graph: graph,
+      legend: legend
+    } );
+   
+    var ticksTreatment = 'glow';
+  
+    var xAxis = new Rickshaw.Graph.Axis.X( {
+       graph: graph
+      //ticksTreatment: ticksTreatment,
+      //timeFixture: new Rickshaw.Fixtures.Time.Local()
+    } );
+
+    xAxis.render();
+    
+    var yAxis = new Rickshaw.Graph.Axis.Y( {
+      graph: graph,
+      //tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
+      //ticksTreatment: ticksTreatment
+    } );
+    
+    yAxis.render();
+    
+
+    var controls = new RenderControls( {
+      element: document.querySelector('form'),
+      graph: graph
+    } );
+}
+
+/* does not work
+function resize(w, h) {
+  //console.log('new width height ' + w + ' ' + h);
+  document.getElementById("content").style.width = w;
+  document.getElementById("content").style.height = h;
+  var sp_width = jQuery("#side_panel").width();
+  document.getElementById("chart_container").style.width = w - sp_width;
+  document.getElementById("chart_container").style.height = h;
+  document.getElementById("preview").style.width = w - sp_width;
+  document.getElementById("timeline").style.width = w - sp_width;
+  if(graph != null) {
+    graph.configure({
+      width: w - sp_width,
+      height: h
+    });
+    graph.render();
+  }
+}
+*/
+function addSeries(name) {
+  seriesData[name] = [];
+  graphSeries.push({
+    color: palette.color(),
+    data: seriesData[name],
+    name: name
+  });
+}
+
+function setInput(name, value) {
+  var newSeries = false;
+  if(!seriesData.hasOwnProperty(name)) {
+    //console.log('adding series for ' + name);
+    addSeries(name);       
+    newSeries = true;
+  }
+  var series = seriesData[name];
+  var numPoints = series.length;
+  series.push( {x : numPoints + 1, y: Number(value)});
+  updateGraph(newSeries);
+}
+
+function wfEvent(e) {
+  if(e.type == 'wf_start') {
+    clearGraph();
+  }
+}
+
+function clearGraph() {
+    seriesData = {};
+    graphSeries = [];
+    palette = new Rickshaw.Color.Palette( { scheme: 'colorwheel' } );
+    graph = null;
+    jQuery("#legend").empty();
+    jQuery("#chart_container").html(
+      //'<div id="title" class="title" style="text-align:-webkit-center; text-align:center;"></div>' +
+        '<div id="chart"></div> <div id="timeline"></div> <div id="preview"></div>');
+    //createGraph();
+}
+
+function updateGraph(seriesAdded) {
+  //console.log('updateGraph ' + seriesAdded);
+  if(graph == null) {
+    //console.log('updateGraph: null graph.');
+      createGraph();
+  } else {
+    //console.log('updateGraph: not null graph.');
+    graph.update();
+    if(seriesAdded) {
+      legend.render();
+      var shelving = new Rickshaw.Graph.Behavior.Series.Toggle( {
+        graph: graph,
+        legend: legend
+      });
+    }
+  }
+}
+
+function setTitle(name) {
+    jQuery("#title").html(name);
+}
+
+/*
+function serialize() {
+    var series = [];
+    graphSeries.forEach(function(d) {
+        series.push({ name : d.name, data : d.data });
+    });
+  return JSON.stringify(series);
+}
+
+function deserialize(serialized) {
+    clearGraph();
+
+    seriesData = [];
+    graphSeries = [];
+
+    var data = JSON.parse(serialized);
+    data.forEach(function(d) {
+        seriesData.push(d.data);
+        graphSeries.push( {
+            color: palette.color(),
+            data : seriesData[seriesData.length-1],
+            name : d.name
+        });
+    });
+  updateGraph();
+}
+*/
+</script>
+</body>

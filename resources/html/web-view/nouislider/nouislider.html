@@ -1,0 +1,67 @@
+<html>
+    <link href="/web-view/nouislider/nouislider.min.css" rel="stylesheet" />
+<head>
+</head>
+<body>
+    <div id="container" style="width:100%; height:100%; text-align: center;">
+      <div id="slider">
+      </div>
+      <br/>
+      <div id="value" style="display: inline-block;">
+      </div>
+    </div>
+<script src="/web-view/nouislider/nouislider.min.js"></script>
+<script>
+
+  var options = {
+    min: 0,
+    max: 100,
+    start: 0,
+    step: 1,
+    value: 0
+  };
+  var slider;
+
+  function resize(width, height) {
+  }
+
+  function setOption(name, value) {
+    options[name] = Number(value);
+    if(slider != null) {
+      slider.noUiSlider.destroy();
+      createSlider();
+    }
+  }
+
+  function setInput(name, value) {
+    if(name == 'trigger') {
+      sendOutput('value', slider.noUiSlider.get());
+    }
+  }
+
+  function initialize() {
+    slider = document.getElementById('slider');
+    createSlider();
+  }
+
+  function createSlider() {
+    noUiSlider.create(slider, {
+      'connect' : 'lower',
+      'range' : {
+        'min' : options.min,
+        'max' : options.max
+      },
+      'start' : options.start,
+      'step' : options.step,
+    });
+    slider.noUiSlider.set(options.value);
+
+    var value = document.getElementById('value');
+    slider.noUiSlider.on('update', function(values, handle) {
+      value.innerHTML = values[handle];
+    });
+
+  }
+</script>
+</body>
+</html>

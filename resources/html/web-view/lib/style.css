@@ -1,0 +1,131 @@
+/* hack for Firefox & jquery ui dialogs */
+/*
+body { 
+    height: 100%;
+}
+*/
+
+.rounded {
+    overflow:hidden;
+    border: 3px solid black;
+    border-style: solid;
+    -webkit-border-radius: 1.2em;
+       -moz-border-radius: 1.2em;
+            border-radius: 1.2em;
+}
+
+.panel {
+    margin: 1px;
+}
+
+.control ul {
+    text-align:center;
+    list-style-type: none;
+    margin:0;
+    padding:2;
+}
+
+/*
+.control .ui-dialog-titlebar {
+    background: blue;
+    color: white;
+    -webkit-border-radius: 1.2em;
+       -moz-border-radius: 1.2em;
+            border-radius: 1.2em;
+}
+*/
+
+.output {
+    border: 3px solid black;
+}
+
+.output .ui-dialog-titlebar {
+    background: blue;
+    color: white;
+    -webkit-border-radius: 1.2em;
+       -moz-border-radius: 1.2em;
+            border-radius: 1.2em;
+}
+
+.ui-widget {
+    font-size: 0.8em;
+}
+
+.ui-dialog .ui-dialog-content {
+    padding: 0.01em 0.01em;
+}
+
+iframe {
+    overflow: hidden;
+    border: none;
+    /* for IE? */
+    frameBorder: 0;
+}
+
+/* remove horizontal scrollbar in safari */
+::-webkit-scrollbar {
+    display: none;
+}
+
+.control-button {
+    -webkit-box-shadow: 0px 1px 0px 0px #54a3f7;
+       -moz-box-shadow: 0px 1px 0px 0px #54a3f7;
+            box-shadow: 0px 1px 0px 0px #54a3f7;
+
+    background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #007dc1), color-stop(1, #0061a7));
+    background:-moz-linear-gradient(top, #007dc1 5%, #0061a7 100%);
+    background:-webkit-linear-gradient(top, #007dc1 5%, #0061a7 100%);
+    background:-o-linear-gradient(top, #007dc1 5%, #0061a7 100%);
+    background:-ms-linear-gradient(top, #007dc1 5%, #0061a7 100%);
+    background:linear-gradient(to bottom, #007dc1 5%, #0061a7 100%);
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#007dc1', endColorstr='#0061a7',GradientType=0);
+
+    background-color:#007dc1;
+
+    -webkit-border-radius:3px;
+       -moz-border-radius:3px;
+            border-radius:3px;
+
+    border:1px solid #124d77;
+
+    display:inline-block;
+    color:#ffffff;
+    font-family:arial;
+    font-size:14px;
+    font-weight:normal;
+    padding:6px 10px;
+    text-decoration:none;
+
+    text-shadow:0px 1px 0px #154682;
+
+}
+
+.control-button:hover {
+
+    background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #0061a7), color-stop(1, #007dc1));
+    background:-moz-linear-gradient(top, #0061a7 5%, #007dc1 100%);
+    background:-webkit-linear-gradient(top, #0061a7 5%, #007dc1 100%);
+    background:-o-linear-gradient(top, #0061a7 5%, #007dc1 100%);
+    background:-ms-linear-gradient(top, #0061a7 5%, #007dc1 100%);
+    background:linear-gradient(to bottom, #0061a7 5%, #007dc1 100%);
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#0061a7', endColorstr='#007dc1',GradientType=0);
+
+    background-color:#0061a7;
+}
+
+.control-button:active {
+    position:relative;
+    top:1px;
+}
+
+.parameters table {
+    width: 100%;
+}
+
+.parameters table .col-name {
+    width: 20%;
+}
+
+.parameters table .col-value {
+    width: 80%;
+}

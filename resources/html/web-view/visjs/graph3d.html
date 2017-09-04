@@ -1,0 +1,69 @@
+<html>
+<head>
+  <title>Graph 3D demo</title>
+
+  <style>
+    body {font: 10pt arial;}
+  </style>
+
+  <script type="text/javascript" src="/web-view/visjs/vis.js"></script>
+</head>
+<body>
+<div id="plot" style="width:100%; height:100%;"></div>
+  <script type="text/javascript">
+    var graph = null;
+
+    // specify options
+    var options = {
+       width:  '800px',
+       height: '600px',
+       style: 'surface',
+       showPerspective: true,
+       showGrid: true,
+       showShadow: false,
+       keepAspectRatio: true,
+       verticalRatio: 0.5,
+       yCenter : '50%'
+    };
+
+    function setInput(name, value) {
+      //console.log('recvd: ' + value);
+      data = new vis.DataSet();
+      var counter = 0;
+      var rows = value.substring(1, value.length - 1).split(';');
+      var x = 0;
+      var y = 0;
+      for(x = 0; x < rows.length; x++) {
+        var cols = rows[x].split(',');
+        for(y = 0; y < cols.length; y++) {
+          //console.log(x + ' ' + y + ' = ' + cols[y]);
+          data.add({
+            id: counter++,
+            x: x,
+            y: y,
+            z: Number(cols[y]),
+            style: Number(cols[y])
+          });
+        }
+      }
+      if(graph == null) {
+        var container = document.getElementById('plot');
+        graph = new vis.Graph3d(container, data, options);
+      } else {
+        graph.setData(data);
+      }
+    }
+    
+    function resize(width, height) {
+      options.width = width + 'px';
+      options.height = height + 'px';
+      if(graph != null) {
+        graph.setSize(options.width, options.height);
+        graph.redraw();
+      }
+    }
+</script>
+</body>
+  </script>
+</body>
+</html>

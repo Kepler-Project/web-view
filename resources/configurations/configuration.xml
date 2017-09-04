@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<config>
+
+    <server>
+        <startServer>false</startServer>
+        <daemon>false</daemon>
+        <port>9122</port>
+        <rootDir></rootDir>
+        <logPath></logPath>
+        <instances>1</instances>
+        <appendIndexHtml>true</appendIndexHtml>
+        <workerThreads>20</workerThreads>
+        <allowWorkflowDownloads>false</allowWorkflowDownloads>
+        <metadataFile></metadataFile>
+         
+        <!-- session timeout if not accessed in milliseconds -->
+        <sessionTimeout>86400000</sessionTimeout>
+         
+        <apps>
+            <app>
+                <name>echo</name>
+                <class>org.kepler.webview.server.app.Echo</class>
+                <type>java</type>
+            </app>
+        </apps>
+
+        <ssl>
+            <enable>false</enable>
+            <port>8443</port>
+            <key></key>
+            <cert></cert>
+
+            <redirectHttp>
+                <enable>false</enable>
+                <status>302</status>
+                <hostname>localhost</hostname>
+                <port>8443</port>
+            </redirectHttp>
+        </ssl>
+
+        <auth>
+            <type>simple</type>
+            <!--<type>none</type>-->
+            <!--<type>drupal</type>-->
+
+            <entity>
+                <user>username</user>
+                <password>password</password>
+                <group>group name</group>
+            </entity>
+
+            <!--
+            <drupal>
+                <host>drupal host</host>
+                <service>path name of service</service>
+                <role>user role</role>
+                <groupField>name of field containing group name</groupField>
+                <fullNameField>name of field containing user's full name</fullNameField>
+            </drupal>
+            -->
+        </auth>
+
+        <tableOfContents>
+            <enable>true</enable>
+            <pathRegex>^(?:/wf){0,1}/*$</pathRegex>
+            <!-- TODO <openWorkflows>true</openWorkflows> -->
+            <!-- TODO <recentWorkflows>true</recentWorkflows> -->
+            <!-- TODO <demoWorkflows>true</demoWorkflows> -->
+        </tableOfContents>
+
+    </server>
+
+</config>

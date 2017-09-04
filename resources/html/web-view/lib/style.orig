@@ -1,0 +1,321 @@
+/* hack for Firefox & jquery ui dialogs */
+body { 
+    height: 100%; 
+}
+
+/*
+a,
+a code {
+    color: #212630;
+    text-decoration: none;
+}
+
+#options a {
+  background-color: #C0C7C7;
+  border-radius: 9px 9px 9px 9px;
+  color: #FFFFFF;
+  display: inline-block;
+  font-size: 15px;
+  font-weight: normal;
+  margin: 2px 0 1px;
+  padding: 1px 5px;
+  text-decoration: none;
+  transition-duration: 0.2s;
+  transition-property: background-color, color;
+  white-space: nowrap;
+}
+
+#options a:hover {
+    background-color: #0A9FE1;
+    color: #FFFFFF;
+}
+
+#options a.selected {
+  background-color: blue;
+  text-shadow: none;
+  color: white;
+}
+
+#options input {
+    display: block;
+    padding: 0.4em 0.5em;
+    width: auto;
+}
+
+.item {
+  width: 320px;
+  height: 200px;
+  margin: 5px;
+  float: left;
+  overflow: hidden;
+  position: relative;
+  /*background: cyan;* /
+  border-style: solid;
+  color: #222;
+  -webkit-border-radius: 1.2em;
+      -moz-border-radius: 1.2em;
+           border-radius: 1.2em;
+}     
+
+.workflow-thumb {
+    width: 290px;
+    height: 160px;
+    display: inline;
+    margin: 5px 0px 0px 13px;
+    overflow: hidden;
+    -webkit-border-radius: 1.2em;
+       -moz-border-radius: 1.2em;
+            border-radius: 1.2em;
+}
+
+.workflow-name {
+  bottom: 1.6em;
+  display: block;
+  left: 0.5em;
+  font-size: 1.5em;
+  margin: 0px;
+  text-align: center;
+}
+
+.actor-image-div {
+  height: 150px;
+  overflow: hidden; 
+}
+
+.actor-image {
+  height:200%;
+  width:auto;
+  display:block;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+#workflow-image {
+    float:center;
+    overflow: hidden;
+    /* remove the blue border in IE * /
+    border: none;
+}
+
+*/
+
+.rounded {
+    overflow:hidden;
+    border: 3px solid black;
+    border-style: solid;
+    -webkit-border-radius: 1.2em;
+       -moz-border-radius: 1.2em;
+            border-radius: 1.2em;
+}
+
+.panel {
+    margin: 1px;
+}
+
+.control {
+    border: 3px solid blue;
+}
+
+.control ul, .parameters ul {
+    text-align:center;
+    list-style-type: none;
+    margin:0;
+    padding:2;
+}
+
+.control .ui-dialog-titlebar {
+    background: blue;
+    color: white;
+    -webkit-border-radius: 1.2em;
+       -moz-border-radius: 1.2em;
+            border-radius: 1.2em;
+}
+
+.parameters {
+    border: 3px solid green;
+}
+
+/*
+.parameters .ui-dialog-content {
+    padding: 0em 0em;
+}
+*/
+
+.parameters .ui-dialog-titlebar {
+    background: green;
+    color: white;
+    -webkit-border-radius: 1.2em;
+       -moz-border-radius: 1.2em;
+            border-radius: 1.2em;
+}
+
+#parameters-content table {
+    font-size:1em;
+}
+
+.output pre {
+    font-size: 1.2em;
+}
+
+.output {
+    border: 3px solid black;
+}
+
+.output .ui-dialog-titlebar {
+    background: blue;
+    color: white;
+    -webkit-border-radius: 1.2em;
+       -moz-border-radius: 1.2em;
+            border-radius: 1.2em;
+}
+
+/*
+.script pre {
+    font-size: 1.2em;
+}
+
+.script {
+    border: 3px solid #E68A00;
+}
+
+.script .ui-dialog-titlebar {
+    background: #E68A00;
+    color: white;
+    -webkit-border-radius: 1.2em;
+       -moz-border-radius: 1.2em;
+            border-radius: 1.2em;
+}
+
+.run-status {
+    border: 3px solid purple;
+}
+
+.run-status table {
+    font-size:1em;
+    width: 100%;
+}
+
+.run-status .ui-dialog-titlebar {
+    background: purple;
+    color: white;
+    -webkit-border-radius: 1.2em;
+       -moz-border-radius: 1.2em;
+            border-radius: 1.2em;
+}
+
+.error {
+    border: 3px solid red;
+}
+
+.error .ui-dialog-titlebar {
+    background: red;
+    color: white;
+    -webkit-border-radius: 1.2em;
+       -moz-border-radius: 1.2em;
+            border-radius: 1.2em;
+}
+
+.docs {
+    border: 3px solid #A0522D;
+}
+
+.docs .ui-dialog-titlebar {
+    background: brown;
+    color: white;
+    -webkit-border-radius: 1.2em;
+       -moz-border-radius: 1.2em;
+            border-radius: 1.2em;
+}
+
+.workflow {
+    display:inline-block;
+}
+
+
+.ui-dialog-titlebar-close {
+    display: none;
+}
+
+.workflow .ui-dialog-titlebar {
+    margin: 5px;
+    padding: 0.4em 1em;
+    position: relative;
+    background: black;
+    color: white;
+    -webkit-border-radius: 1.2em;
+       -moz-border-radius: 1.2em;
+            border-radius: 1.2em;
+}
+
+.control-button {
+    -webkit-box-shadow: 0px 1px 0px 0px #54a3f7;
+       -moz-box-shadow: 0px 1px 0px 0px #54a3f7;
+            box-shadow: 0px 1px 0px 0px #54a3f7;
+    
+    background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #007dc1), color-stop(1, #0061a7));
+    background:-moz-linear-gradient(top, #007dc1 5%, #0061a7 100%);
+    background:-webkit-linear-gradient(top, #007dc1 5%, #0061a7 100%);
+    background:-o-linear-gradient(top, #007dc1 5%, #0061a7 100%);
+    background:-ms-linear-gradient(top, #007dc1 5%, #0061a7 100%);
+    background:linear-gradient(to bottom, #007dc1 5%, #0061a7 100%);
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#007dc1', endColorstr='#0061a7',GradientType=0);
+        
+    background-color:#007dc1;
+        
+    -webkit-border-radius:3px;
+       -moz-border-radius:3px;
+            border-radius:3px;
+        
+    border:1px solid #124d77;
+        
+    display:inline-block;
+    color:#ffffff;
+    font-family:arial;
+    font-size:14px;
+    font-weight:normal;
+    padding:6px 10px;
+    text-decoration:none;
+        
+    text-shadow:0px 1px 0px #154682;
+        
+}
+
+.control-button:hover {
+        
+    background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #0061a7), color-stop(1, #007dc1));
+    background:-moz-linear-gradient(top, #0061a7 5%, #007dc1 100%);
+    background:-webkit-linear-gradient(top, #0061a7 5%, #007dc1 100%);
+    background:-o-linear-gradient(top, #0061a7 5%, #007dc1 100%);
+    background:-ms-linear-gradient(top, #0061a7 5%, #007dc1 100%);
+    background:linear-gradient(to bottom, #0061a7 5%, #007dc1 100%);
+    filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#0061a7', endColorstr='#007dc1',GradientType=0);
+        
+    background-color:#0061a7;
+}
+
+.control-button:active {
+    position:relative;
+    top:1px;
+}
+
+*/
+
+.ui-widget {
+    font-size: 0.8em;
+}
+
+.ui-dialog .ui-dialog-content {
+    padding: 0.01em 0.01em;
+}
+
+iframe {
+    overflow: hidden;
+    border: none;
+    /* for IE? */
+    frameBorder: 0;
+}
+
+/* remove horizontal scrollbar in safari */
+::-webkit-scrollbar {
+    display: none;
+}

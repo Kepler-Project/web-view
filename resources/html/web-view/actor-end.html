@@ -1,0 +1,9 @@
+<script>
+  var path = PATH;
+  function sendOutput(name, value) {
+    parent.sendWithPath('data', path, name, value);
+  }
+  function sendOptions(name, value) {
+    parent.sendWithPath('options', path, name, value);
+  }
+</script>

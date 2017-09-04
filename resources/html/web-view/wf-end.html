@@ -1,0 +1,222 @@
+<script>
+  
+  var socket;
+  var iframeLoaded = 0;
+
+  function send(json) {
+    console.log("sending " + JSON.stringify(json));
+    socket.send(JSON.stringify(json));
+  }
+  
+  function sendWithPath(type, path, name, value) {
+    var json = { actor : {} };
+    if(type == 'data') {
+      json.actor[path] = { data : {} };
+      json.actor[path].data[name] = value;
+    } else if(type == 'options') {
+      json.actor[path] = { options : {} };
+      json.actor[path].options[name] = value;
+    } else {
+      alert('Unknown type: ' + type);
+    }
+    send(json);
+  }
+
+  function sendWindowProperties(id, ui) {
+    var json = { actor : {} };
+    json.actor[id] = { pos : {
+      top: ui.position.top,
+      left: ui.position.left
+      }
+    };
+
+    if(ui.hasOwnProperty('size')) {
+        json.actor[id].pos.width = ui.size.width;
+        json.actor[id].pos.height = ui.size.height;
+    }
+
+    send(json);
+  }
+
+  function sendToAll(json) {
+    $('iframe').each(function(i) {
+        if(typeof(this.contentWindow.wfEvent) == typeof(Function)) {
+          this.contentWindow.wfEvent(json);
+        }
+    });
+  }
+
+  function resize(id, width, height) {
+    //console.log(id + " resized to : " + width + " " + height);
+    var iframe = document.getElementById(id);
+    if(typeof(iframe.contentWindow.resize) == typeof(Function)) {
+      // TODO remove these constants
+      iframe.style.width = width - 3;
+      iframe.style.height = height - 35;
+      iframe.contentWindow.resize(width - 24, height - 50);
+    }
+  }
+
+  function hasResize(id) {
+    var iframe = document.getElementById(id);
+    if(iframe != null && typeof(iframe.contentWindow.resize) == (typeof(Function))) {
+      return true;
+    }
+    return false;
+  }
+
+  function connectWebSocket() {
+    if (window.WebSocket) {
+      socket = new WebSocket(URL);
+      socket.onmessage = function(event) {
+        console.log("Received data from websocket: " + event.data);
+        var json = JSON.parse(event.data);
+        if(json.hasOwnProperty('actor')) {
+          for(var path in json.actor) {
+            if(json.actor.hasOwnProperty(path)) {
+              // TODO check for null
+              var actorIFrame = document.getElementById('iframe-' + path).contentWindow;
+              var actorJSON = json.actor[path];
+              if(actorJSON.hasOwnProperty('data') && typeof(actorIFrame.setInput) == typeof(Function)) {
+                for(var key in actorJSON.data) {
+                  if(actorJSON.data.hasOwnProperty(key)) {
+                    //console.log("key = " + key + " val = " + json[key]);
+                    actorIFrame.setInput(key, actorJSON.data[key]);
+                  }
+                }
+              }
+              if(actorJSON.hasOwnProperty('options') && typeof(actorIFrame.setOption) == typeof(Function)) {
+                for(var key in actorJSON.options) {
+                  if(actorJSON.options.hasOwnProperty(key)) {
+                    //console.log("key = " + key + " val = " + json[key]);
+                    actorIFrame.setOption(key, actorJSON.options[key]);
+                  }
+                }
+              }
+              if(actorJSON.hasOwnProperty('title')) {
+                //console.log('set title for ' + name + ' to ' + actorJSON.title);
+                $('#' + path).dialog('option', 'title', actorJSON.title);
+              }
+            }
+          }
+        }
+
+        if(json.hasOwnProperty('event')) {
+          // see if workflow event
+          if(json.event.type == 'wf_start' || json.event.type == 'wf_end') {
+            sendToAll(json.event);
+          } else if(json.event.type == 'wf_closed') {
+            socket.close();
+            alert("Workflow was closed.");
+          } else {
+            // is actor event; send to actor iframe 
+            var path = json.event.actor;
+            var actorIFrame = document.getElementById('iframe-' + path);
+            if(actorIFrame != null) {
+              if(json.event.type == 'initialize' &&
+                typeof(actorIFrame.contentWindow.initialize) == typeof(Function)) {
+                actorIFrame.contentWindow.initialize();
+              } else if(typeof(actorIFrame.contentWindow.wfEvent) == typeof(Function)) {
+                actorIFrame.contentWindow.wfEvent(json.event);
+              }
+            }
+            // send to timeline
+            var iframes = document.getElementsByTagName('iframe');
+            for(var i = 0; i < iframes.length; i++) {
+              if(iframes[i].id.endsWith('_wfTimeline')) {
+                iframes[i].contentWindow.wfEvent(json.event);
+                break;
+              }
+            }
+          }
+        }
+
+        if(json.hasOwnProperty('actor_rename')) {
+          // TODO clean up
+          /*
+          console.log('rename actor old: '
+            + json.actor_rename.oldName
+            + ' new: '
+            + json.actor_rename.newName);
+          */
+          var old = document.getElementById('actor' + json.actor_rename.oldName);
+          if(old != null) {
+            old.id = 'actor' + json.actor_rename.newName;
+          }
+          old = document.getElementById('iframe' + json.actor_rename.oldName);
+          if(old != null) {
+            old.id = 'iframe' + json.actor_rename.newName;
+            //console.log('changing ' + old.contentWindow.path + ' to ' + json.actor_rename.newName);
+            old.contentWindow.path = 'actor' + json.actor_rename.newName;
+          }
+        }
+      }
+    }
+  }
+
+  $(function() {
+
+    $('iframe').load(function() {
+      $(this).css('height', $(this).contents().height() + 'px');
+      $(this).css('width', $(this).contents().width() + 'px');
+      if(hasResize(this.id)) {
+        // TODO better replace
+        var id = this.id.replace(/^iframe-/, '');
+        console.log('dialog id = ' + id);
+        var d = $('#' + id);
+        d.dialog('option', 'resizable', true);
+      }
+
+      // connect the web socket once all the iframes have been loaded.
+      // if the workflow has run or is running, then data for an iframe
+      // may be received once the connection is made, so we wait until
+      // all the iframes are loaded before connecting.
+      iframeLoaded++;
+      if(iframeLoaded == document.getElementsByTagName('iframe').length) {
+        connectWebSocket();
+      }
+    });
+
+    $('.actor').each(function(i) {
+      
+      $(this).dialog({
+        dialogClass: 'panel rounded output',
+        dragStop: function(event, ui) {
+            sendWindowProperties(event.target.id, ui);
+        },
+        minHeight: 0,
+        minWidth: 0,
+        resizable: false,
+        resizeStop: function(event, ui) {
+            var id = 'iframe-' + event.target.id;
+            resize(id, ui.size.width, ui.size.height);
+            sendWindowProperties(event.target.id, ui);
+        },
+        width: 'auto'
+      })
+      .dialogExtend({
+        "closable" : false,
+        "maximizable" : true,
+        "minimizable" : true,
+        "collapsable" : true,
+        "dblclick" : "collapse",
+        //"titlebar" : "transparent",
+        //"minimizeLocation" : "right",
+        //"icons" : {
+          //"maximize" : "ui-icon-circle-plus",
+          //"minimize" : "ui-icon-circle-minus",
+          //"collapse" : "ui-icon-triangle-1-s",
+          //"restore" : "ui-icon-bullet"
+        //},
+      });
+
+      $('.ui-draggable').draggable('option', 'snap', true);
+
+    });
+
+POSITION_ACTORS
+
+  });
+</script>
+</body>
+</html>

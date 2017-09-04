@@ -1,0 +1,69 @@
+<html>
+<head>
+  <script type="text/javascript" src="/web-view/visjs/vis.js"></script>
+  <link href="/web-view/visjs/vis.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<div id="timeline"></div>
+
+<script type="text/javascript">
+  // DOM element where the Timeline will be attached
+  var container = document.getElementById('timeline');
+
+  // Create a DataSet (allows two way data-binding)
+  var items = new vis.DataSet({});
+
+  // Configuration for the Timeline
+  var options = {
+    height: '100%'
+  };
+
+  // Create a Timeline
+  var timeline = new vis.Timeline(container, items, options);
+
+  var wf_id;
+  var actor_id = {};
+
+  function resize(width, height) {
+  }
+
+  function wfEvent(e) {
+    var ts = new Date(e.ts);
+    if(e.type == 'wf_start') {
+      items.clear();
+      wf_id = items.add({
+        id: items.length++,
+        content: 'workflow',
+        start: ts,
+        //type: 'point'
+       })[0];
+    } else if(e.type == 'wf_end') {
+      items.update({
+        id: wf_id,
+        end: ts
+      });
+    }
+    else if(e.type == 'fire_start') {
+      actor_id[e.actor] = items.add({
+        id: items.length++,
+        content: e.actor.substring(e.actor.indexOf('/', 1) + 1),
+        start: ts,
+        type: 'point'
+      })[0];
+    } else if(e.type == 'fire_end') {
+      if(e.ts - items.get(actor_id[e.actor]).start.getTime() > 1000) {
+        //console.log('longer than a second: ' + items.get(actor_id[e.actor]).content);
+        items.update({
+          id: actor_id[e.actor],
+          end: ts,
+          type: null
+        });
+      }
+    }
+    timeline.fit();
+  }
+
+</script>
+
+</body>
+</html>
