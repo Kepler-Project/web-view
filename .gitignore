@@ -1,3 +1,6 @@
+.classpath
+.project
+target
 lib/jar/mvn
 
 # Compiled class file
