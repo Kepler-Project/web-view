@@ -39,8 +39,8 @@
         </ssl>
 
         <auth>
-            <type>simple</type>
-            <!--<type>none</type>-->
+            <type>none</type>
+            <!--<type>simple</type>-->
             <!--<type>drupal</type>-->
 
             <entity>
