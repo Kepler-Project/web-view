@@ -10,6 +10,8 @@ Welcome to Kepler WebView's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   install
+   config
 
 
 Indices and tables
