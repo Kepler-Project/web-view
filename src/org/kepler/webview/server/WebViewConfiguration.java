@@ -277,7 +277,7 @@ public class WebViewConfiguration {
     public final static String WEBVIEW_START_SERVER_FLAG = "-wv";
     
     /** Command line flag to run the server in daemon mode. */
-    public final static String WEBVIEW_SERVER_DAEMON_FLAG = "-wvdaemon";
+    public final static String WEBVIEW_SERVER_DAEMON_FLAG = "-wvd";
 
     /** Command line flag to specify the number of server instances. */
     public final static String WEBVIEW_SERVER_INSTANCES_FLAG = "-wvnum";
