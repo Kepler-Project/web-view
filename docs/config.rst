@@ -4,6 +4,7 @@ Configuration
 
 The configuration file is in ``web-view/resources/configurations/configuration.xml``. This section describes the configuration parameters in this file.
 
+
 ===================
 Default config file
 ===================

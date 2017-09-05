@@ -12,6 +12,8 @@ Welcome to Kepler WebView's documentation!
 
    install
    config
+   run
+   rest
 
 
 Indices and tables
