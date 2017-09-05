@@ -3,7 +3,7 @@ Running
 =======
 
 WebView can be run from the command line, e.g,::
-.. code-block::
+   
    ./kepler.sh -wvport 10151 -wvd
 
 The command line arguments are::
