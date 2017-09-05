@@ -10,18 +10,25 @@ describes the configuration parameters in this file.
 Configuration Parameters
 ========================
 
+------
+daemon
+------
+
+If ``true``, then Kepler does not launch GUI editor but waits for REST and websocket requests.
+Otherwise (``false``), Kepler starts normally.
+
+----
+port
+----
+
+Port to listen on for requsts.
+
 -----------
 startServer
 -----------
 
 ``true`` or ``false``: if WebView should be started.
 
-------
-daemon
-------
-
-If ``true``, then Kepler does not launch GUI editor but wait for REST and websocket requests.
-Otherwise (``false``), Kepler starts normally.
 
 ===================
 Default config file
