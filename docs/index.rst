@@ -10,11 +10,3 @@ Kepler WebView
    config
    run
    rest
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
