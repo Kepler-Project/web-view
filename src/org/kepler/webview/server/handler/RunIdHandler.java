@@ -69,7 +69,7 @@ public class RunIdHandler extends ProvenanceHandler {
     public void handle(RoutingContext context) {
         
         HttpServerRequest request = context.request();
-        String runLSID = request.getParam("id");
+        String runLSID = request.getParam("param0");
         final MultiMap params = request.params();
         
         //System.out.println(runId);
@@ -149,7 +149,7 @@ public class RunIdHandler extends ProvenanceHandler {
         //System.out.println("run id handle binary");
         
         HttpServerRequest request = context.request();
-        String runLSIDStr = request.getParam("id");        
+        String runLSIDStr = request.getParam("param0");        
         KeplerLSID runLSID = null;
 
         try {
@@ -174,7 +174,7 @@ public class RunIdHandler extends ProvenanceHandler {
             return;
         }
 
-        String operationStr = request.getParam("param");
+        String operationStr = request.getParam("param1");
         final MultiMap params = request.params();
 
         try {

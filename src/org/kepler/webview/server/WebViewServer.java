@@ -182,6 +182,7 @@ public class WebViewServer extends AbstractVerticle {
                     future.complete(new JsonObject().put("responses", responsesJson));
                 }             
             } catch (Exception e) {
+                e.printStackTrace();
                 future.fail("Error executing app: " + e.getMessage());
                 return;
             } finally {
@@ -716,8 +717,9 @@ public class WebViewServer extends AbstractVerticle {
         
         RunIdHandler runIdHandler = new RunIdHandler(this);
         
-        router.get("/kepler/runs/:id/:param").blockingHandler(runIdHandler::handleBinary);
-        router.get("/kepler/runs/:id").handler(runIdHandler);
+        String runIdRegexStr = "(urn:lsid:[^:]+:[^:]+:[^:]+(:\\d+)?)";         
+        router.getWithRegex("/kepler/runs/" + runIdRegexStr + "/(\\w+)").blockingHandler(runIdHandler::handleBinary);
+        router.getWithRegex("/kepler/runs/" + runIdRegexStr).handler(runIdHandler);
         
         if(WebViewConfiguration.getHttpServerMetadataFileName() != null) {
             System.out.println("Metadata file set; requests at /login");
