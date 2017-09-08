@@ -160,14 +160,7 @@ public class WebViewServer extends AbstractVerticle {
                 } else {
                     appParams = new JsonObject();
                 }
-                        
-                // set user full name
-                appParams.put("WebView_FullName", user.principal().getString("fullname"));
-                
-                // set the authorization groups        
-                appParams.put("WebView_groups", AuthUtilities.getGroups(user).stream()
-                    .map(s -> "\"" + s.toString() + "\"").collect(Collectors.joining(",")));
-                
+                                        
                 runSynchronously = json.getBoolean("sync", false);
                 if(!runSynchronously) {
                     throw new Exception("Asynchronous execution not supported for apps.");
@@ -176,10 +169,14 @@ public class WebViewServer extends AbstractVerticle {
                 if(runSynchronously) {
                                                                                                                 
                     // execute the application
-                    JsonObject responsesJson = app.exec(appParams);
-                    
+                    JsonArray responsesJson = app.exec(user, appParams);
+
                     // send the successful response
-                    future.complete(new JsonObject().put("responses", responsesJson));
+                    if(responsesJson != null) {
+                        future.complete(new JsonObject().put("responses", responsesJson));
+                    } else {
+                        future.complete(new JsonObject().put("responses", new JsonArray()));
+                    }
                 }             
             } catch (Exception e) {
                 e.printStackTrace();

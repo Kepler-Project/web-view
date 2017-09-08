@@ -30,7 +30,9 @@ package org.kepler.webview.server.app;
 
 import java.util.Map;
 
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.auth.User;
 
 /** Example app that echos input parameters.
  * 
@@ -51,10 +53,9 @@ public class Echo implements App {
         
     }
 
-    /** Return input parameters (minus WebView_FullName and WebView_groups). */
+    /** Return input parameters. */
     @Override
-    public JsonObject exec(JsonObject inputs) {
-        return inputs;
-    }
+    public JsonArray exec(User user, JsonObject inputs) {
+        return new JsonArray().add(inputs);    }
 
 }

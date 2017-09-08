@@ -28,7 +28,9 @@
  */
 package org.kepler.webview.server.app;
 
+import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.auth.User;
 
 /** Interface for WebView server apps.
  * 
@@ -42,5 +44,5 @@ public interface App extends AutoCloseable, Cloneable {
     @Override
     public void close();
     
-    public JsonObject exec(JsonObject inputs) throws Exception;
+    public JsonArray exec(User user, JsonObject inputs) throws Exception;
 }
