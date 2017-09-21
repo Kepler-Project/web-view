@@ -119,6 +119,10 @@ public class RunIdHandler extends ProvenanceHandler {
                             _addOutputs(responseJson, run);
                         }
                         
+                        if(_getTrueFalseParameter(params, "parametersValues")) {
+                            _addParametersValues(responseJson, run);
+                        }
+                        
                         if(_getTrueFalseParameter(params, "prov")) {
                             _addProv(responseJson, params, run);
                         } else if(params.contains("provFormat")) {
@@ -297,6 +301,17 @@ public class RunIdHandler extends ProvenanceHandler {
         }
     }
     
+    /** Add parameters-values. */
+    private void _addParametersValues(JsonObject responseJson, WorkflowRun run) throws Exception {
+            
+        JsonObject parametersValuesJson = new JsonObject();
+        responseJson.put("parametersValues", parametersValuesJson);
+        Map<String,String> parametersValues = _queryable.getParameterNameValuesOfSpecificTypeForExecution(run.getExecId());
+        for(Map.Entry<String,String> entry: parametersValues.entrySet()) {
+            parametersValuesJson.put(entry.getKey(), entry.getValue());
+        }
+    }
+
     /** Add prov if prov parameter is true. */
     private void _addProv(JsonObject responseJson, MultiMap params,
             WorkflowRun run) throws Exception {
