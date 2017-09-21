@@ -710,7 +710,7 @@ public class WebViewServer extends AbstractVerticle {
         router.post("/kepler/runwf").handler(runWorkflowHandler::handleRunWorkflow);
         router.post("/app").handler(runWorkflowHandler::handleRunApp);
         
-        router.get("/kepler/runs").handler(new RunsHandler(this));
+        router.post("/kepler/runs").handler(new RunsHandler(this));
         
         RunIdHandler runIdHandler = new RunIdHandler(this);
         
