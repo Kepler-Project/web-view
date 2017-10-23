@@ -78,7 +78,7 @@ public class WorkflowHandler extends BaseHandler {
               .setStatusCode(HttpURLConnection.HTTP_NOT_FOUND).end();
             System.err.println("Unhandled http request (workflow not found) for: " +
                 req.path());
-            _server.log(req, HttpURLConnection.HTTP_NOT_FOUND, timestamp);
+            _server.log(req, context.user(), HttpURLConnection.HTTP_NOT_FOUND, timestamp);
             return;
         }
         
@@ -91,7 +91,7 @@ public class WorkflowHandler extends BaseHandler {
                .setStatusCode(HttpURLConnection.HTTP_NOT_FOUND).end();
              System.err.println("Unhandled http request (wf-start.html not found) for: " +
                req.path()); 
-             _server.log(req, HttpURLConnection.HTTP_NOT_FOUND, timestamp);
+             _server.log(req, context.user(), HttpURLConnection.HTTP_NOT_FOUND, timestamp);
         }
         
         String wfEndPath = WebViewServer.findFile(_WF_END);
@@ -101,7 +101,7 @@ public class WorkflowHandler extends BaseHandler {
                .setStatusCode(HttpURLConnection.HTTP_NOT_FOUND).end();
              System.err.println("Unhandled http request (wf-end.html not found) for: " +
                req.path());   
-             _server.log(req, HttpURLConnection.HTTP_NOT_FOUND, timestamp);
+             _server.log(req, context.user(), HttpURLConnection.HTTP_NOT_FOUND, timestamp);
         }
         
         StringBuilder buf = new StringBuilder();
@@ -178,7 +178,7 @@ public class WorkflowHandler extends BaseHandler {
         response.setStatusCode(HttpURLConnection.HTTP_OK)
             .end();
 
-        _server.log(req, HttpURLConnection.HTTP_OK, timestamp);
+        _server.log(req, context.user(), HttpURLConnection.HTTP_OK, timestamp);
 
     }
 

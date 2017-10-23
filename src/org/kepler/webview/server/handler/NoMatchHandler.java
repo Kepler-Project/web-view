@@ -60,7 +60,7 @@ public class NoMatchHandler extends BaseHandler {
             isDir = new File(path).isDirectory();
             if(!isDir && (_allowWorkflowDownloads || !path.endsWith(".kar"))) {
                 context.response().sendFile(path);
-                _server.log(req, HttpURLConnection.HTTP_OK, timestamp, new File(path).length());
+                _server.log(req, context.user(), HttpURLConnection.HTTP_OK, timestamp, new File(path).length());
                 return;
             }
         }
@@ -71,7 +71,7 @@ public class NoMatchHandler extends BaseHandler {
             File indexFile = new File(path, "index.html");
             if(indexFile.exists()) {
                 context.response().sendFile(indexFile.getAbsolutePath());
-                _server.log(req, HttpURLConnection.HTTP_OK, timestamp, new File(path).length());
+                _server.log(req, context.user(), HttpURLConnection.HTTP_OK, timestamp, new File(path).length());
                 return;
             }
             System.err.println("Unhandled http request (directory) for: " + normalizedPath);
@@ -94,7 +94,7 @@ public class NoMatchHandler extends BaseHandler {
             .write("<html>\n<body>\n<h2>" + message + "</h2>\n</body>\n</html>")
             .setStatusCode(HttpURLConnection.HTTP_NOT_FOUND)
             .end();
-        _server.log(req, error, timestamp);            
+        _server.log(req, context.user(), error, timestamp);            
     }
 
     /** If true, allow downloads for workflow files. */

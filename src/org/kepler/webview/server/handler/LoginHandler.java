@@ -84,7 +84,7 @@ public class LoginHandler extends BaseHandler {
                                     .end();
                                 System.err.println("Error reading metadata file " +
                                     _metadataFileName + ": " + t.getMessage());
-                                _server.log(context.request(), HttpURLConnection.HTTP_INTERNAL_ERROR, timestamp);
+                                _server.log(context.request(), context.user(), HttpURLConnection.HTTP_INTERNAL_ERROR, timestamp);
                                 return;
                             }
                             // send metadata json in response
@@ -96,7 +96,7 @@ public class LoginHandler extends BaseHandler {
                                 .end();
                             System.err.println("Could not read metadata " +
                                     _metadataFileName + ": " + readResult.cause().getMessage());
-                            _server.log(context.request(), HttpURLConnection.HTTP_INTERNAL_ERROR, timestamp);
+                            _server.log(context.request(), context.user(), HttpURLConnection.HTTP_INTERNAL_ERROR, timestamp);
                         }
                     });
                 } else {
@@ -110,7 +110,7 @@ public class LoginHandler extends BaseHandler {
                     .end();
                 System.err.println("Could not get properties for metadata " +
                     _metadataFileName + ": " + propsResult.cause().getMessage());
-                _server.log(context.request(), HttpURLConnection.HTTP_INTERNAL_ERROR, timestamp);
+                _server.log(context.request(), context.user(), HttpURLConnection.HTTP_INTERNAL_ERROR, timestamp);
             }                
         });
     }
@@ -162,7 +162,7 @@ public class LoginHandler extends BaseHandler {
         //System.out.println(returnJson.encodePrettily());
         
         context.response().end(returnJson.encode());
-        _server.log(context.request(), HttpURLConnection.HTTP_OK, timestamp);
+        _server.log(context.request(), context.user(), HttpURLConnection.HTTP_OK, timestamp);
     }
     
     /** Vertx file system. */

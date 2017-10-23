@@ -86,6 +86,6 @@ public class TableOfContentsHandler extends BaseHandler {
             .putHeader("Expires", "0")
             .end(buf.toString());
         
-        _server.log(context.request(), HttpURLConnection.HTTP_OK, timestamp);            
+        _server.log(context.request(), context.user(), HttpURLConnection.HTTP_OK, timestamp);            
     }
 }

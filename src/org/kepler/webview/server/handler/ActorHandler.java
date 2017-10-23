@@ -68,7 +68,7 @@ public class ActorHandler extends BaseHandler {
               .setStatusCode(HttpURLConnection.HTTP_NOT_FOUND).end();
             System.err.println("Unhandled http request (actor-end.html not found) for: " +
               context.normalisedPath());
-            _server.log(req, HttpURLConnection.HTTP_NOT_FOUND, timestamp);
+            _server.log(req, context.user(), HttpURLConnection.HTTP_NOT_FOUND, timestamp);
             return;
         }
 
@@ -80,7 +80,7 @@ public class ActorHandler extends BaseHandler {
             response.write("<html>\n<body>\n<h2>Id " +
                     actorId + " not found.</h2>\n</body>\n</html>")
               .setStatusCode(HttpURLConnection.HTTP_NOT_FOUND).end();
-            _server.log(req, HttpURLConnection.HTTP_NOT_FOUND, timestamp);
+            _server.log(req, context.user(), HttpURLConnection.HTTP_NOT_FOUND, timestamp);
             System.err.println("Unhandled http request (id not found) for: " +
                 context.normalisedPath());
             return;
@@ -93,7 +93,7 @@ public class ActorHandler extends BaseHandler {
             response.write("<html>\n<body>\n<h2>NamedObj " +
                     name + " is not a WebViewable.</h2>\n</body>\n</html>")
               .setStatusCode(HttpURLConnection.HTTP_NOT_FOUND).end();
-            _server.log(req, HttpURLConnection.HTTP_NOT_FOUND, timestamp);
+            _server.log(req, context.user(), HttpURLConnection.HTTP_NOT_FOUND, timestamp);
             System.err.println("Unhandled http request (namedobj is not a webviewable) for: " +
                 context.normalisedPath());
             return;
@@ -127,7 +127,7 @@ public class ActorHandler extends BaseHandler {
             MessageHandler.error("Error reading HTML in WebView actor.", e);
         }
         response.setStatusCode(HttpURLConnection.HTTP_OK).end();
-        _server.log(req, HttpURLConnection.HTTP_OK, timestamp);
+        _server.log(req, context.user(), HttpURLConnection.HTTP_OK, timestamp);
     }
     
     private final static String _ACTOR_END_HTML = "web-view" +

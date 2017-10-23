@@ -91,7 +91,7 @@ public class RunWorkflowHandler extends BaseHandler {
                     .setStatusCode(HttpURLConnection.HTTP_BAD_REQUEST)
                     .setStatusMessage("Only expected single file upload.")
                     .end(Buffer.buffer(new JsonObject().put("error", "Only expected single file upload.").toString()));
-                _server.log(req, HttpURLConnection.HTTP_BAD_REQUEST, timestamp);
+                _server.log(req, context.user(), HttpURLConnection.HTTP_BAD_REQUEST, timestamp);
                 return;
             }
             if(reqJson == null) {
@@ -152,6 +152,6 @@ public class RunWorkflowHandler extends BaseHandler {
             .setStatusCode(httpStatus)
             .setStatusMessage(message)
             .end(Buffer.buffer(responseStr.toString()));
-        _server.log(context.request(), httpStatus, timestamp);
+        _server.log(context.request(), context.user(), httpStatus, timestamp);
     }
 }

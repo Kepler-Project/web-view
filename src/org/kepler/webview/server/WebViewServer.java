@@ -541,20 +541,22 @@ public class WebViewServer extends AbstractVerticle {
     
     /** Log an http server request.
      *  @param request The request
+     *  @param user The user
      *  @param status The status
      *  @param timestamp The timestamp when the request occurred.
      */
-    public void log(HttpServerRequest request, int status, long timestamp) {
-        log(request, status, timestamp, -1);
+    public void log(HttpServerRequest request, User user, int status, long timestamp) {
+        log(request, user, status, timestamp, -1);
     }
     
-    /** Log an http server request with a file successfully sent to the client.
+    /** Log an http server request.
      *  @param request The request
+     *  @param user The user
      *  @param status The status
      *  @param timestamp The timestamp when the request occurred.
      *  @param length The length of the file successfully sent to the client.
      */
-    public void log(HttpServerRequest request, int status, long timestamp, long length) {
+    public void log(HttpServerRequest request, User user, int status, long timestamp, long length) {
         
         String versionStr;
         switch(request.version()) {
@@ -587,9 +589,15 @@ public class WebViewServer extends AbstractVerticle {
             userAgent = "-";
         }
         
+        String userNameStr = "-";
+        if(user != null) {
+            userNameStr = user.principal().getString("username");
+        }
+                    
         // TODO how to get user-identifier and userid?
-        String message = String.format("%s - - [%s] \"%s %s %s\" %d %s \"%s\" \"%s\"",
+        String message = String.format("%s - %s [%s] \"%s %s %s\" %d %s \"%s\" \"%s\"",
             hostString,
+            userNameStr,
             _logTimeFormat.format(new Date(timestamp)),
             request.method(),
             request.uri(),
@@ -1182,7 +1190,7 @@ public class WebViewServer extends AbstractVerticle {
         = Collections.synchronizedMap(new HashMap<String,App>());
     
     /* Timestamp format for logging. */
-    private final DateFormat _logTimeFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+    private final DateFormat _logTimeFormat = new SimpleDateFormat("dd/MMM/yyyy:HH:mm:ss Z");
     
     private static Thread _loggingThread;
     
