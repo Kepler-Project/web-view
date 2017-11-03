@@ -111,6 +111,19 @@ public class WebViewConfiguration {
                 _getConfigurationString("server.auth.drupal.groupsField", null),
                 _getConfigurationString("server.auth.drupal.fullNameField", null));
 
+        } else if(authType.equals("class")) {
+            String className = _getConfigurationString("server.auth.class", null);
+            if(className != null) {
+                try {
+                    Class<?> clazz = Class.forName(className);
+                    return (AuthProvider)clazz.newInstance();
+                } catch (InstantiationException | IllegalAccessException | ClassNotFoundException e) {
+                    System.err.println("ERROR: could not instantiate auth class " + className + ": " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+        } else {
+            System.err.println("ERROR: unknown type of authentication: " + authType);
         }
         return null;
     }
