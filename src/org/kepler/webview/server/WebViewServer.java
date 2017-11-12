@@ -722,7 +722,7 @@ public class WebViewServer extends AbstractVerticle {
         
         RunIdHandler runIdHandler = new RunIdHandler(this);
         
-        String runIdRegexStr = "(urn:lsid:[^:]+:[^:]+:[^:]+(:\\d+)?)";         
+        String runIdRegexStr = "(urn:lsid:[^:]+:[^:]+:[^:]+(?::\\d+)?)";         
         router.getWithRegex("/kepler/runs/" + runIdRegexStr + "/(\\w+)").blockingHandler(runIdHandler::handleBinary);
         router.getWithRegex("/kepler/runs/" + runIdRegexStr).handler(runIdHandler);
         
