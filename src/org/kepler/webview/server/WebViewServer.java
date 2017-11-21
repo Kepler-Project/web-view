@@ -935,7 +935,7 @@ public class WebViewServer extends AbstractVerticle {
         public void dispose(KeplerGraphFrame frame) {
             CompositeActor model = (CompositeActor) frame.getModel();
             removeModel(model);
-            _models.remove(model);
+            _models.remove(model.getName());
         }
         
     }

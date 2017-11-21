@@ -92,6 +92,7 @@ public class WorkflowHandler extends BaseHandler {
              System.err.println("Unhandled http request (wf-start.html not found) for: " +
                req.path()); 
              _server.log(req, context.user(), HttpURLConnection.HTTP_NOT_FOUND, timestamp);
+             return;
         }
         
         String wfEndPath = WebViewServer.findFile(_WF_END);
@@ -102,6 +103,7 @@ public class WorkflowHandler extends BaseHandler {
              System.err.println("Unhandled http request (wf-end.html not found) for: " +
                req.path());   
              _server.log(req, context.user(), HttpURLConnection.HTTP_NOT_FOUND, timestamp);
+             return;
         }
         
         StringBuilder buf = new StringBuilder();
