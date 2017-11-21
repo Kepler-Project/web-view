@@ -1146,7 +1146,7 @@ public class WebViewServer extends AbstractVerticle {
                 // add quotes around each string since we use this to set the
                 // WebView_groups parameter in the workflow.
                 String authGroupsStr = AuthUtilities.getGroups(user).stream()
-                    .map(s -> "\"" + s.toString() + "\"").collect(Collectors.joining(","));
+                    .map(s -> "\"" + s + "\"").collect(Collectors.joining(","));
                 //System.out.println(authGroupsStr);
                 ((Settable)attribute).setExpression("{" + authGroupsStr + "}");
             }

@@ -117,7 +117,7 @@ public class WebViewId extends StringAttribute {
                 final NamedObj namedObj = entry.getValue().get();
                 if(namedObj == null || namedObj == model || namedObj.toplevel() == model) {
                     _idMap.remove(entry.getKey());
-                    if(namedObj != null && (namedObj instanceof WebViewAttribute)) {
+                    if(namedObj instanceof WebViewAttribute) {
                         ((WebViewAttribute)namedObj).unregisterHandler();
                     }
                 }
