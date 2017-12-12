@@ -80,6 +80,7 @@ import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.VertxOptions;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.core.http.HttpServerRequest;
@@ -94,6 +95,7 @@ import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.AuthHandler;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
+import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.UserSessionHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
@@ -467,6 +469,7 @@ public class WebViewServer extends AbstractVerticle {
             @Override
             public void run() {
                 String logPath = WebViewConfiguration.getHttpServerLogPath();
+                System.out.println("Web-view logging to " + logPath);
                 try(FileWriter writer = new FileWriter(logPath, true)) {
                     String message;
                     try {
@@ -685,6 +688,23 @@ public class WebViewServer extends AbstractVerticle {
         router.route().handler(sessionHandler);
         router.route().handler(UserSessionHandler.create(_auth));
 
+        if(WebViewConfiguration.getHttpServerCorsEnabled()) {
+            String allowOriginPatternStr = WebViewConfiguration.getHttpServerCorsAllowOriginPattern();
+            if(allowOriginPatternStr == null || allowOriginPatternStr.trim().isEmpty()) {
+                throw new Exception("Must specify allow origini pattern for CORS.");
+            }
+            router.route().handler(CorsHandler.create(allowOriginPatternStr)
+                    .allowedMethod(HttpMethod.GET)
+                    .allowedMethod(HttpMethod.POST)
+                    .allowedMethod(HttpMethod.OPTIONS)
+                    .allowCredentials(true)
+                    .allowedHeader("Access-Control-Allow-Credentials")
+                    .allowedHeader("X-PINGARUNER")
+                    .allowedHeader("Content-Type")
+                    .allowedHeader("authorization"));
+            System.out.println("CORS enabled for " + allowOriginPatternStr);
+        }
+        
         BodyHandler bodyHandler = BodyHandler.create();
         
         if(_rootDir != null) {

@@ -127,7 +127,17 @@ public class WebViewConfiguration {
         }
         return null;
     }
+
+    /** Get the CORS allow origin pattern. */
+    public static String getHttpServerCorsAllowOriginPattern() {
+        return _getConfigurationString("server.cors.allowOrigin", null);
+    }
     
+    /** Returns true if the http server allows CORS. */
+    public static boolean getHttpServerCorsEnabled() {
+        return _getConfigurationBoolean("server.cors.enable", false);
+    }
+
     /** Returns true if the http server allows workflows to be downloaded. */
     public static boolean getHttpServerAllowWorkflowDownloads() {
         return _getConfigurationBoolean("server.allowWorkflowDownloads", false);
