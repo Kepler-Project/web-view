@@ -60,6 +60,11 @@
             -->
         </auth>
 
+        <cors>
+            <enable>false</enable>
+            <allowOrigin>*</allowOrigin>
+        </cors>
+
         <tableOfContents>
             <enable>true</enable>
             <pathRegex>^(?:/wf){0,1}/*$</pathRegex>
