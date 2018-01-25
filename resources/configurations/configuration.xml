@@ -21,6 +21,11 @@
                 <name>echo</name>
                 <class>org.kepler.webview.server.app.Echo</class>
                 <type>java</type>
+                <app>
+                    <name>GetURL</name>
+                    <class>org.kepler.webview.server.app.GetURL</class>
+                    <type>java</type>
+                </app>
             </app>
         </apps>
 
