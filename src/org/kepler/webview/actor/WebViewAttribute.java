@@ -36,6 +36,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
+import org.kepler.provenance.ProvenanceRecorder;
 import org.kepler.webview.data.TokenConverter;
 import org.kepler.webview.server.WebViewId;
 import org.kepler.webview.server.WebViewServer;
@@ -45,6 +46,7 @@ import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.MessageConsumer;
 import io.vertx.core.json.JsonObject;
 import ptolemy.actor.ActorFiringListener;
+import ptolemy.actor.CompositeActor;
 import ptolemy.actor.FiringEvent;
 import ptolemy.actor.FiringsRecordable;
 import ptolemy.actor.IOPort;
@@ -130,6 +132,7 @@ public class WebViewAttribute extends StringAttribute implements Initializable, 
         if(event.getType() == FiringEvent.AFTER_ITERATE ||
                 event.getType() == FiringEvent.AFTER_POSTFIRE) {
             try {
+                //System.out.println("After fire event: " + event);
                 WebViewableUtilities.sendData(_readDataJson, this);
             } catch (IllegalActionException e) {
                 System.err.println("Error sending data: " + e.getMessage());
@@ -193,9 +196,20 @@ public class WebViewAttribute extends StringAttribute implements Initializable, 
         // read input ports and send to clients        
         if(event.getEventType() == IOPortEvent.GET_END) {
             Object value = _convertInputToJson(event.getToken());
-            //System.out.println(event.getPort().getName() + " value is " + value);
+            //System.out.println("Port event " + event.getPort().getName() + " value is " + value);
             _readDataJson.put(event.getPort().getName(), value);
         }
+        
+        if(!_firingEventsFromDirector) {
+            try {
+                //System.out.println("After fire event: " + event);
+                WebViewableUtilities.sendData(_readDataJson, this);
+            } catch (IllegalActionException e) {
+                System.err.println("Error sending data: " + e.getMessage());
+                e.printStackTrace(System.err);
+            }      
+            _readDataJson = new JsonObject();
+        }        
     }
 
     @Override
@@ -212,6 +226,18 @@ public class WebViewAttribute extends StringAttribute implements Initializable, 
                 }
             }
         }
+
+        while(container != null && !(container instanceof CompositeActor)) {
+            container = container.getContainer();
+        }
+
+        if(container == null ||
+            !ProvenanceRecorder.containsSupportedDirector((CompositeActor) container)) {
+            _firingEventsFromDirector = false;
+        } else {
+            _firingEventsFromDirector = true;            
+        }
+
     }
 
     @Override
@@ -492,4 +518,6 @@ public class WebViewAttribute extends StringAttribute implements Initializable, 
     
     private TokenConverter _tokenConverter = new TokenConverter();
 
+    /** If true, director will send firing events. */
+    private boolean _firingEventsFromDirector = false;
 }
