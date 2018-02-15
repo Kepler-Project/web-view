@@ -88,6 +88,7 @@ public class RunWorkflowHandler extends BaseHandler {
             Set<FileUpload> uploads = context.fileUploads();
             if(uploads.size() > 1) {
                 context.response()
+                    .putHeader("Content-Type", "application/json")
                     .setStatusCode(HttpURLConnection.HTTP_BAD_REQUEST)
                     .setStatusMessage("Only expected single file upload.")
                     .end(Buffer.buffer(new JsonObject().put("error", "Only expected single file upload.").toString()));
@@ -149,6 +150,7 @@ public class RunWorkflowHandler extends BaseHandler {
         //System.out.println(responseStr);
         
         context.response()
+            .putHeader("Content-Type", "application/json")
             .setStatusCode(httpStatus)
             .setStatusMessage(message)
             .end(Buffer.buffer(responseStr.toString()));
