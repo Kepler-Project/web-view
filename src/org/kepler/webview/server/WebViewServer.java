@@ -757,7 +757,9 @@ public class WebViewServer extends AbstractVerticle {
                 // if not valid, return 400
                 if(loginSessionContext.user() == null) {
                     //System.out.println("user is null");
-                    loginSessionContext.response().setStatusCode(HttpURLConnection.HTTP_BAD_REQUEST).end();
+                    loginSessionContext.response()
+                        .putHeader("Content-Type", "text/plain")
+                        .setStatusCode(HttpURLConnection.HTTP_BAD_REQUEST).end();
                 } else {
                     // otherwise call login handler to return metadata.
                     loginSessionContext.next();

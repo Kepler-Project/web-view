@@ -79,6 +79,7 @@ public class LoginHandler extends BaseHandler {
                                 _metadataJson = readResult.result().toJsonObject();
                             } catch(Throwable t) {
                                 context.response()
+                                    .putHeader("Content-Type", "text/plain")
                                     .setStatusCode(HttpURLConnection.HTTP_INTERNAL_ERROR)
                                     .setStatusMessage("Could not access metadata.")
                                     .end();
@@ -91,6 +92,7 @@ public class LoginHandler extends BaseHandler {
                             _sendMetadata(context, timestamp);
                         } else {
                             context.response()
+                                .putHeader("Content-Type", "text/plain")
                                 .setStatusCode(HttpURLConnection.HTTP_INTERNAL_ERROR)
                                 .setStatusMessage("Could not access metadata.")
                                 .end();
@@ -105,6 +107,7 @@ public class LoginHandler extends BaseHandler {
                 }                
             } else {
                 context.response()
+                    .putHeader("Content-Type", "text/plain")
                     .setStatusCode(HttpURLConnection.HTTP_INTERNAL_ERROR)
                     .setStatusMessage("Could not access metadata.")
                     .end();
@@ -161,7 +164,8 @@ public class LoginHandler extends BaseHandler {
                
         //System.out.println(returnJson.encodePrettily());
         
-        context.response().end(returnJson.encode());
+        context.response().putHeader("Content-Type", "application/json")
+            .end(returnJson.encode());
         _server.log(context.request(), context.user(), HttpURLConnection.HTTP_OK, timestamp);
     }
     
