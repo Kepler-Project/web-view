@@ -773,7 +773,9 @@ public class WebViewServer extends AbstractVerticle {
                 //System.out.println("destroying session " + logoutContext.session().id());
                 logoutContext.session().destroy();
                 logoutContext.clearUser();
-                logoutContext.response().end();
+                logoutContext.response()
+                    .putHeader("Content-Type", "text/plain")
+                    .end();
             });
         }
 
