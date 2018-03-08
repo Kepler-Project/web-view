@@ -235,6 +235,13 @@ public class WebViewConfiguration {
         return _getConfigurationInteger("server.workerThreads", 1);
     }
 
+    /** Get the timeout, in milliseconds, for workflow execution.
+     * Returns -1 for no timeout.
+     */
+    public static long getHttpServerWorkflowTimeout() {
+        return _getConfigurationLong("server.workflowTimeout", -1);
+    }
+
     /** Get the port number for the https server. */
     public static int getHttpsServerPort() {
         return _getConfigurationInteger("server.ssl.port", DEFAULT_WEBVIEW_SECURE_SERVER_PORT);
@@ -374,4 +381,4 @@ public class WebViewConfiguration {
 
     /** Default session timeout in milliseconds */
     private static final long DEFAULT_WEBVIEW_SERVER_SESSION_TIMEOUT = 3600*1000;
-}
+    }

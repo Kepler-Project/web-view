@@ -15,7 +15,10 @@
          
         <!-- session timeout if not accessed in milliseconds -->
         <sessionTimeout>86400000</sessionTimeout>
-         
+        
+        <!-- workflow execution timeout -->
+        <workflowTimeout></workflowTimeout>
+        
         <apps>
             <app>
                 <name>echo</name>

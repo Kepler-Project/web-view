@@ -223,7 +223,6 @@ public class WebViewServer extends AbstractVerticle {
             //System.out.println("executeBlocking " + wfName);
             
             boolean runSynchronously = false;
-            Manager manager = null;
             ProvenanceRecorder recorder = null;
             CompositeActor model = null;
             
@@ -269,11 +268,7 @@ public class WebViewServer extends AbstractVerticle {
                 }
                 
                 // create manager and add model
-                try {
-                    manager = new Manager(model.workspace(), "Manager");
-                } catch(IllegalActionException e) {
-                    throw new Exception("Error creating Manager: " + e.getMessage());
-                }
+                final Manager manager = new Manager(model.workspace(), "Manager");
 
                 try {
                     model.setManager(manager);
@@ -319,9 +314,24 @@ public class WebViewServer extends AbstractVerticle {
                         });
                     }
 
+                    final boolean[] timeout = new boolean[1];
+                    timeout[0] = false;
+                    long timerId = vertx.setTimer(_workflowTimeout, id -> {
+                        timeout[0] = true;
+                        manager.stop();
+                        future.fail("Execution timeout.");
+                    });
+                    
+
                     // call execute() instead of run, otherwise exceptions
                     // go to execution listener asynchronously.
                     manager.execute();
+                    
+                    if(timeout[0]) {
+                        return;
+                    } else if(!vertx.cancelTimer(timerId)) {
+                        System.err.println("Workflow timeout Timer does not exist.");
+                    }
                                                                         
                     JsonObject responseJson = new JsonObject();
 
@@ -350,20 +360,8 @@ public class WebViewServer extends AbstractVerticle {
                     //System.out.println(arrayJson.encodePrettily());
                     responseJson.put("responses", arrayJson);
                     future.complete(responseJson);
-                }             
-            } catch (Exception e) {
-                future.fail("Error executing workflow: " + e.getMessage());
-                return;
-            } finally {
-                if(model != null && runSynchronously) {
-                    removeModel(model);
-                    model = null;
-                }
-            }
-            
-            try {
-                if(!runSynchronously && model != null) {
-                    
+                } else { // asynchronous             
+                                        
                     final CompositeActor finalModel = model;
                     recorder.addPiggyback(new Recording() {
                         @Override
@@ -380,10 +378,11 @@ public class WebViewServer extends AbstractVerticle {
                     
                     manager.startRun();
                 }
-            } catch(Exception e) {
-                e.printStackTrace();
+            } catch (Exception e) {
+                future.fail("Error executing workflow: " + e.getMessage());
+                return;
             } finally {
-                if(model != null) {
+                if(model != null && runSynchronously) {
                     removeModel(model);
                     model = null;
                 }
@@ -448,7 +447,8 @@ public class WebViewServer extends AbstractVerticle {
                 
         int workerPoolSize = WebViewConfiguration.getHttpServerWorkerThreads();
         VertxOptions options = new VertxOptions()
-                .setWorkerPoolSize(workerPoolSize);
+                .setWorkerPoolSize(workerPoolSize)
+                .setMaxWorkerExecuteTime(Long.MAX_VALUE);
         
         _vertx = Vertx.vertx(options);
         
@@ -460,6 +460,8 @@ public class WebViewServer extends AbstractVerticle {
         }
         
         _appendIndexHtml = WebViewConfiguration.getHttpServerAppendIndexHtml();
+        
+        _workflowTimeout = WebViewConfiguration.getHttpServerWorkflowTimeout();
         
         // register as an updater to get window open and close events
         KeplerGraphFrame.addUpdater(_updater);
@@ -1226,4 +1228,6 @@ public class WebViewServer extends AbstractVerticle {
     private static boolean _appendIndexHtml;
         
     private static Vertx _vertx;
+    
+    private static long _workflowTimeout;
 }
