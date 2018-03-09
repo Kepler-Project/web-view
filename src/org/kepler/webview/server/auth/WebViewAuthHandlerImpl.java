@@ -111,7 +111,8 @@ public class WebViewAuthHandlerImpl extends AuthHandlerImpl {
   }
 
   private void handle401(RoutingContext context, String scheme) {
-    context.response().putHeader("WWW-Authenticate", scheme + " realm=\"" + realm + "\"");
+    context.response().putHeader("WWW-Authenticate", scheme + " realm=\"" + realm + "\"")
+        .putHeader("Content-type", "text/plain");
     context.fail(401);
   }
 }
