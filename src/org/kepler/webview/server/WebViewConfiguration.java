@@ -65,6 +65,16 @@ public class WebViewConfiguration {
         return _getConfigurationBoolean("server.ssl.enable", false);
     }
 
+    /** Returns the auth token for ROHUB. */
+    public static String getROHubAuthToken() {
+        return _getConfigurationString("server.roHub.authToken", null);
+    }
+    
+    /** Returns the URI for ROHUB REST API. */
+    public static String getROHubURI() {
+        return _getConfigurationString("server.roHub.uri", null);       
+    }
+    
     /** Get the authorization group.
      *  @param username The user name.
      *  @param password The password.

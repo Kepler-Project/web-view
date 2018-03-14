@@ -81,6 +81,11 @@
             <!-- TODO <demoWorkflows>true</demoWorkflows> -->
         </tableOfContents>
 
+        <roHub>
+            <authToken></authToken>
+            <uri>http://sandbox.rohub.org/rodl/ROs/</uri>
+        </roHub>
+
     </server>
 
 </config>
