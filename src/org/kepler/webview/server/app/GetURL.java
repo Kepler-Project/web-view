@@ -27,12 +27,13 @@
  */
 package org.kepler.webview.server.app;
 
-import java.io.InputStream;
+import java.net.URI;
 
-import org.apache.commons.httpclient.HttpClient;
-import org.apache.commons.httpclient.methods.GetMethod;
-import org.apache.commons.io.IOUtils;
+import org.kepler.webview.server.WebViewServer;
 
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.User;
@@ -42,51 +43,39 @@ import io.vertx.ext.auth.User;
  *
  * @author Daniel Crawl
  */
-public class GetURL implements App {
-
-    /** Do nothing. */
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        return super.clone();
-    }
+public class GetURL extends AbstractApp {
 
     @Override
-    public void close() {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public JsonArray exec(User user, JsonObject inputs) throws Exception {
+    public void exec(User user, JsonObject inputs, Handler<AsyncResult<JsonArray>> handler)
+        throws Exception {
         
         if(!inputs.containsKey("url")) {
             throw new Exception("Missing url parameter.");
         }
         
-        JsonObject data = new JsonObject();
-        JsonArray responses = new JsonArray().add(data);
-        
-        String urlString = inputs.getString("url");
-
-        // FIXME would like to use vertx HttpClient, but requires response handler
-        
-        HttpClient client = new HttpClient();
-        GetMethod method = new GetMethod(urlString);
-
+        URI uri = null;
         try {
-            int status = client.executeMethod(method);
-            
-            data.put("status", status);
-            
-            try(InputStream stream = method.getResponseBodyAsStream()) {           
-                data.put("body", IOUtils.toString(stream));
-            }
-                    
-        } finally {
-            method.releaseConnection();
-        }                
+            uri = new URI(inputs.getString("url"));
+        } catch(Exception e) {
+            handler.handle(Future.failedFuture("Error parsing url: " + e.getMessage()));
+            return;
+        }
         
-        return responses;
+        JsonObject data = new JsonObject();
+        
+        int port = uri.getPort();
+        if(port == -1) {
+            port = uri.getScheme().startsWith("https") ? 443 : 80;
+        }
+        
+        WebViewServer.vertx().createHttpClient().get(port,
+            uri.getHost(), uri.getPath(), response -> {
+            data.put("status", response.statusCode());
+            response.bodyHandler(body -> {
+                data.put("body", body.toString());
+                handler.handle(Future.succeededFuture(new JsonArray().add(data)));
+            });
+        }).setFollowRedirects(true).end();
     }
 
 }
