@@ -143,6 +143,7 @@ public class WebViewServer extends AbstractVerticle {
             
             boolean runSynchronously = false;
             App app = null;
+            boolean running = false;
             
             // see if app is already loaded
             try {
@@ -168,24 +169,28 @@ public class WebViewServer extends AbstractVerticle {
                     throw new Exception("Asynchronous execution not supported for apps.");
                 }
                 
-                if(runSynchronously) {
-                                                                                                                
+                if(runSynchronously) {                                                                                                                
                     // execute the application
-                    JsonArray responsesJson = app.exec(user, appParams);
+                    running = true;
+                    final App appCopy = app;
+                    app.exec(user, appParams, appHandler -> {
 
-                    // send the successful response
-                    if(responsesJson != null) {
-                        future.complete(new JsonObject().put("responses", responsesJson));
-                    } else {
-                        future.complete(new JsonObject().put("responses", new JsonArray()));
-                    }
-                }             
+                        if(appHandler.failed()) {
+                            future.fail(appHandler.cause());
+                        } else {
+                            future.complete(new JsonObject().put("responses", appHandler.result()));                            
+                        }
+                        appCopy.close();
+                    });
+                }
             } catch (Exception e) {
                 e.printStackTrace();
                 future.fail("Error executing app: " + e.getMessage());
                 return;
             } finally {
-                app.close();
+                if(!running) {
+                    app.close();                   
+                }
             }
                         
         // set ordered to false to allow parallel executions,
