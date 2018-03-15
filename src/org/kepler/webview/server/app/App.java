@@ -28,6 +28,8 @@
  */
 package org.kepler.webview.server.app;
 
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.User;
@@ -37,12 +39,12 @@ import io.vertx.ext.auth.User;
  *  @author Daniel Crawl
  *  @version $Id: App.java 1406 2017-09-04 19:58:25Z crawl $
  */
-public interface App extends AutoCloseable, Cloneable {
-    
+public interface App extends Cloneable {
+
     public Object clone() throws CloneNotSupportedException;
     
-    @Override
     public void close();
     
-    public JsonArray exec(User user, JsonObject inputs) throws Exception;
+    public void exec(User user, JsonObject inputs, Handler<AsyncResult<JsonArray>> handler)
+        throws Exception;
 }
