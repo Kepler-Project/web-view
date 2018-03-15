@@ -28,8 +28,9 @@
  */
 package org.kepler.webview.server.app;
 
-import java.util.Map;
-
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Future;
+import io.vertx.core.Handler;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.User;
@@ -39,23 +40,13 @@ import io.vertx.ext.auth.User;
  * @author Daniel Crawl
  * @version $Id: Echo.java 1406 2017-09-04 19:58:25Z crawl $  
  */
-public class Echo implements App {
-
-    /** Do nothing. */
-    @Override
-    public Object clone() throws CloneNotSupportedException {
-        return super.clone();
-    }
-    
-    /** Do nothing. */
-    @Override
-    public void close() {
-        
-    }
+public class Echo extends AbstractApp {
 
     /** Return input parameters. */
     @Override
-    public JsonArray exec(User user, JsonObject inputs) {
-        return new JsonArray().add(inputs);    }
+    public void exec(User user, JsonObject inputs, Handler<AsyncResult<JsonArray>> handler)
+        throws Exception {
+        handler.handle(Future.succeededFuture(new JsonArray().add(inputs)));
+    }
 
 }
