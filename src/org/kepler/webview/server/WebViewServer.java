@@ -683,22 +683,10 @@ public class WebViewServer extends AbstractVerticle {
         
         Router router = Router.router(vertx);
 
-        // create cookie and session handlers
-        // authenticated users are cached in the session so authentication
-        // does not need to be performed for each request.
-        router.route().handler(CookieHandler.create());
-        // TODO will LocalSessionStore work with multiple instances?
-        SessionStore sessionStore = LocalSessionStore.create(_vertx);
-        SessionHandler sessionHandler = SessionHandler.create(sessionStore)
-            .setSessionCookieName("web-view.session")
-            .setSessionTimeout(WebViewConfiguration.getHttpServerSessionTimeout());
-        router.route().handler(sessionHandler);
-        router.route().handler(UserSessionHandler.create(_auth));
-
         if(WebViewConfiguration.getHttpServerCorsEnabled()) {
             String allowOriginPatternStr = WebViewConfiguration.getHttpServerCorsAllowOriginPattern();
             if(allowOriginPatternStr == null || allowOriginPatternStr.trim().isEmpty()) {
-                throw new Exception("Must specify allow origin pattern for CORS.");
+                throw new Exception("Must specify allow origini pattern for CORS.");
             }
             router.route().handler(CorsHandler.create(allowOriginPatternStr)
                     .allowedMethod(HttpMethod.GET)
@@ -711,6 +699,19 @@ public class WebViewServer extends AbstractVerticle {
                     .allowedHeader("authorization"));
             System.out.println("CORS enabled for " + allowOriginPatternStr);
         }
+        
+        // create cookie and session handlers
+        // authenticated users are cached in the session so authentication
+        // does not need to be performed for each request.
+        router.route().handler(CookieHandler.create());
+        // TODO will LocalSessionStore work with multiple instances?
+        SessionStore sessionStore = LocalSessionStore.create(_vertx);
+        SessionHandler sessionHandler = SessionHandler.create(sessionStore)
+            .setSessionCookieName("web-view.session")
+            .setSessionTimeout(WebViewConfiguration.getHttpServerSessionTimeout());
+        router.route().handler(sessionHandler);
+        router.route().handler(UserSessionHandler.create(_auth));
+
         
         BodyHandler bodyHandler = BodyHandler.create();
         
