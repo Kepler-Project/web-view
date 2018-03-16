@@ -100,7 +100,7 @@ public class CreateRO extends AbstractApp {
                         if(location == null) {
                             handler.handle(Future.failedFuture("No research object URI in response."));
                         } else {
-                            System.out.println(location);
+                            //System.out.println(location);
                             _annotateRO(location, inputs, handler);
                         }
                     }
@@ -131,8 +131,8 @@ public class CreateRO extends AbstractApp {
             HttpClientRequest request = WebViewServer.vertx()
                 .createHttpClient()
                 .post(roURI.getHost(), roURI.getPath(), response -> {
-                    int status = response.statusCode();
-                    System.out.println("annotation status: " + status);
+                    //int status = response.statusCode();
+                    //System.out.println("annotation status: " + status);
                     _stringResponse(handler, "location", location);
                     /*
                     response.bodyHandler(b -> {
@@ -156,7 +156,7 @@ public class CreateRO extends AbstractApp {
                 .set("Content-length", String.valueOf(body.length()))
                 .set("Slug", "title.rdf")
                 .set("Authorization", "Bearer " + _authStr)
-                .set("Link", "<" + location + ">; rel=\"http://purl.org/ao/annotateResource\"");
+                .set("Link", "<" + location + ">; rel=\"http://purl.org/ao/annotatesResource\"");
             request.setFollowRedirects(true).write(body).end();
             
             //System.out.println(request.headers().get("Link"));
