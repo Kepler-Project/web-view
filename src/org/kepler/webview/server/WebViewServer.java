@@ -698,7 +698,7 @@ public class WebViewServer extends AbstractVerticle {
         if(WebViewConfiguration.getHttpServerCorsEnabled()) {
             String allowOriginPatternStr = WebViewConfiguration.getHttpServerCorsAllowOriginPattern();
             if(allowOriginPatternStr == null || allowOriginPatternStr.trim().isEmpty()) {
-                throw new Exception("Must specify allow origini pattern for CORS.");
+                throw new Exception("Must specify allow origin pattern for CORS.");
             }
             router.route().handler(CorsHandler.create(allowOriginPatternStr)
                     .allowedMethod(HttpMethod.GET)
