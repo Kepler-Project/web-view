@@ -25,7 +25,7 @@ import io.vertx.ext.auth.AuthProvider;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.Session;
-import io.vertx.ext.web.handler.impl.AuthHandlerImpl;
+import io.vertx.ext.web.handler.impl.BasicAuthHandlerImpl;
 
 /** Basic authentication handler that uses "WebView" as the scheme
  * instead of "Basic" so that 401 responses are not caught by the browser. 
@@ -35,21 +35,19 @@ import io.vertx.ext.web.handler.impl.AuthHandlerImpl;
  * @author <a href="http://pmlopes@gmail.com">Paulo Lopes</a>
  * @author <a href="http://tfox.org">Tim Fox</a>
  */
-public class WebViewAuthHandlerImpl extends AuthHandlerImpl {
+public class WebViewAuthHandlerImpl extends BasicAuthHandlerImpl {
 
-  private final String realm;
 
   public WebViewAuthHandlerImpl(AuthProvider authProvider, String realm) {
-    super(authProvider);
-    this.realm = realm;
+    super(authProvider, realm);
   }
 
   @Override
   public void handle(RoutingContext context) {
     User user = context.user();
     if (user != null) {
-      // Already authenticated in, just authorise
-      authorise(user, context);
+      // Already authenticated in, just authorize
+      authorizeUser(user, context);
     } else {
       HttpServerRequest request = context.request();
       String authorization = request.headers().get(HttpHeaders.AUTHORIZATION);
@@ -99,7 +97,7 @@ public class WebViewAuthHandlerImpl extends AuthHandlerImpl {
                 // session should be upgraded as recommended by owasp
                 session.regenerateId();
               }
-              authorise(authenticated, context);
+              authorizeUser(authenticated, context);
             } else {
               // if not able to authenticate, send 401 with same scheme as in request
               handle401(context, sscheme);
@@ -108,6 +106,16 @@ public class WebViewAuthHandlerImpl extends AuthHandlerImpl {
         }
       }
     }
+  }
+
+  private void authorizeUser(final User user, final RoutingContext context) {
+    this.authorize(user, authZ -> {
+        if (authZ.failed()) {
+            this.processException(context, authZ.cause());
+            return;
+        }
+        context.next();
+    });
   }
 
   private void handle401(RoutingContext context, String scheme) {
