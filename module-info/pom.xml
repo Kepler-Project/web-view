@@ -10,7 +10,7 @@
   <url>http://kepler-project.org</url>
 
   <properties>
-    <vertx.version>3.4.2</vertx.version>
+    <vertx.version>3.5.1</vertx.version>
     <jar.dir>../lib/jar/mvn</jar.dir>
   </properties>
 
