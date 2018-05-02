@@ -101,7 +101,7 @@ import io.vertx.ext.web.handler.UserSessionHandler;
 import io.vertx.ext.web.sstore.LocalSessionStore;
 import io.vertx.ext.web.sstore.SessionStore;
 import ptolemy.actor.CompositeActor;
-//import ptolemy.actor.ExecutionListener;
+import ptolemy.actor.ExecutionListener;
 import ptolemy.actor.Manager;
 import ptolemy.actor.gui.ConfigurationApplication;
 import ptolemy.kernel.util.Attribute;
@@ -281,7 +281,6 @@ public class WebViewServer extends AbstractVerticle {
                     throw new Exception("Error setting Manager for sub-workflow: " + e.getMessage());
                 }    
                 
-                /*
                 String[] errorMessage = new String[1];
 
                 ExecutionListener managerListener = new ExecutionListener() {
@@ -295,7 +294,7 @@ public class WebViewServer extends AbstractVerticle {
 
                     @Override
                     public void executionFinished(Manager m) {
-                        System.out.println("finished");
+                        //System.out.println("finished");
                     }
 
                     @Override
@@ -305,7 +304,6 @@ public class WebViewServer extends AbstractVerticle {
                 };
                 
                 manager.addExecutionListener(managerListener);
-                */
                 
                 if(runSynchronously) {
                     
@@ -332,10 +330,18 @@ public class WebViewServer extends AbstractVerticle {
                     // go to execution listener asynchronously.
                     manager.execute();
                     
+                    // see if we timed-out. if so, we already sent the response,
+                    // so exit.
                     if(timeout[0]) {
                         return;
                     } else if(!vertx.cancelTimer(timerId)) {
                         System.err.println("Workflow timeout Timer does not exist.");
+                    }
+                    
+                    // see if there is a workflow exception
+                    if(errorMessage[0] != null) {
+                        future.fail(errorMessage[0]);
+                        return;
                     }
                                                                         
                     JsonObject responseJson = new JsonObject();
