@@ -17,7 +17,7 @@
         <sessionTimeout>86400000</sessionTimeout>
         
         <!-- workflow execution timeout -->
-        <workflowTimeout></workflowTimeout>
+        <workflowTimeout>600000</workflowTimeout>
         
         <apps>
             <app>
@@ -28,6 +28,10 @@
                     <name>GetURL</name>
                     <class>org.kepler.webview.server.app.GetURL</class>
                     <type>java</type>
+                </app>
+                <app>
+                    <name>CreateRO</name>
+                    <class>org.kepler.webview.server.app.ro.CreateRO</class>
                 </app>
             </app>
         </apps>
