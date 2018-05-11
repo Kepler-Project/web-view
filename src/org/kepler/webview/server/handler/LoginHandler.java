@@ -76,7 +76,7 @@ public class LoginHandler extends BaseHandler {
                         if(readResult.succeeded()) {
                             // update the cached json
                             try {
-                                _metadataJson = readResult.result().toJsonObject();
+                                _metadataJson = readResult.result().toJsonArray();
                             } catch(Throwable t) {
                                 context.response()
                                     .putHeader("Content-Type", "text/plain")
@@ -141,25 +141,33 @@ public class LoginHandler extends BaseHandler {
             groupsArray.add(groupName);
         }
         returnJson.put("groups", groupsArray);
-        
-        JsonObject returnGroupJson = new JsonObject();
 
-        // add group data from the metadata file.
-        JsonObject metadataGroupJson = _metadataJson.getJsonObject("group");
-        if(metadataGroupJson != null) {
-            // if user is admin, add all groups
-            if(userGroups.contains("admin")) {
-                returnJson.put("groupdata", metadataGroupJson.copy());
-            } else {                
-                returnJson.put("groupdata", returnGroupJson);
-                // add group data only from group(s) that the user is in.
-                for(String userGroup : userGroups) {
-                    Object groupObject = metadataGroupJson.getValue(userGroup);
-                    if(groupObject != null) {
-                        returnGroupJson.put(userGroup, groupObject);
+        // add metadata
+
+        if(userGroups.contains("admin")) {
+            returnJson.put("metadata", _metadataJson.copy());
+        } else { 
+            JsonArray returnMetadataJson = new JsonArray();
+            for(int i = 0; i < _metadataJson.size(); i++) {
+                JsonObject m = _metadataJson.getJsonObject(i);
+                boolean inGroup = false;
+                if(!m.containsKey("groups")) {
+                    inGroup = true;
+                } else {
+                    JsonArray groupsList = m.getJsonArray("groups");
+                    for(int j = 0; j < groupsList.size(); j++) {
+                        if(userGroups.contains(groupsList.getString(j))) {
+                            inGroup = true;
+                            break;
+                        }
                     }
                 }
-            }
+                
+                if(inGroup) {
+                    returnMetadataJson.add(m.copy());
+                }
+            };
+            returnJson.put("metadata", returnMetadataJson);
         }
                
         //System.out.println(returnJson.encodePrettily());
@@ -179,5 +187,5 @@ public class LoginHandler extends BaseHandler {
     private long _metadataLastModifiedTime = -1;
     
     /** Metadata JSON cached from reading metadata file. */
-    private JsonObject _metadataJson;
+    private JsonArray _metadataJson;
 }
