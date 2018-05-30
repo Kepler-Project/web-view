@@ -29,7 +29,9 @@
 package org.kepler.webview.server;
 
 import java.io.File;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.httpclient.util.HttpURLConnection;
 import org.kepler.CommandLineArgument;
@@ -157,6 +159,11 @@ public class WebViewConfiguration {
         return _getConfigurationBoolean("server.appendIndexHtml", false);
     }
         
+    /** Get list of server directories that can be indexed. */
+    public static Set<String> getHttpServerDirectoriesToIndex() {
+        return _getConfigurationStrings("server.directoryIndex.dir");
+    }
+    
     /** Get the number of instances of http servers to start. */
     public static int getHttpServerInstances() {
         
@@ -352,6 +359,15 @@ public class WebViewConfiguration {
             }
         }
         return defaultValue;
+    }
+    
+    /** Get set of strings from multiple configuration values with the same name. */
+    private static Set<String> _getConfigurationStrings(String path) {
+        Set<String> retval = new HashSet<String>();
+        for(ConfigurationProperty property: _getConfigurationProperties(path)) {
+            retval.add(property.getValue());
+        }
+        return retval;
     }
         
     /** Get a boolean configuration value in the web-view config file. */

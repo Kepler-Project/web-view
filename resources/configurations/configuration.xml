@@ -75,6 +75,13 @@
             <allowOrigin>*</allowOrigin>
         </cors>
 
+        <!-- set of directories that can be indexed. -->
+        <directoryIndex>
+            <!--<dir></dir>-->
+            <!--<dir></dir>-->
+            <!--<dir></dir>-->
+        </directoryIndex>
+
         <tableOfContents>
             <enable>true</enable>
             <pathRegex>^(?:/wf){0,1}/*$</pathRegex>
