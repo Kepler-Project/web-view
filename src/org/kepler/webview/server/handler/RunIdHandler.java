@@ -140,7 +140,7 @@ public class RunIdHandler extends ProvenanceHandler {
 
         }, false, result -> {            
             if(result.succeeded()) {
-                _sendResponseWithSuccessText(request, "application/json", result.result().encode());
+                _sendResponseWithSuccessJson(request, result.result());
             } else {
                 _sendResponseWithError(request, result.cause().getMessage());
             }

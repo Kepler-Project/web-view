@@ -86,6 +86,15 @@ public abstract class BaseHandler implements Handler<RoutingContext> {
             .end(new JsonObject().put("error", "Error: " + errorStr).encode());
     }
     
+    /** Send an success response with json.
+     * @param request The http request.
+     * @param json The json object.
+     */
+    protected void _sendResponseWithSuccessJson(HttpServerRequest request,
+            JsonObject json) {
+        _sendResponseWithSuccessText(request, "application/json", json.encode());
+    }
+    
     /** Send an success response with text.
      * @param request The http request.
      * @param contentType The value for Content-Type.

@@ -143,8 +143,7 @@ public class RunsHandler extends ProvenanceHandler {
             }
         }, false, result -> {
             if(result.succeeded()) {
-                _sendResponseWithSuccessText(context.request(), "application/json",
-                    result.result().encode());
+                _sendResponseWithSuccessJson(context.request(), result.result());
             } else {
                 _sendResponseWithError(context.request(), "Could not get runs: " + result.cause().getMessage());
             }
