@@ -164,7 +164,7 @@ public class NoMatchHandler extends BaseHandler {
                     array.add(json);
                 }
                 
-                _sendResponseWithSuccessJson(req, new JsonObject().put(normalizedPath, array));
+                _sendResponseWithSuccessJson(req, new JsonObject().put(normalizedPath.substring(1), array));
                 _server.log(req, context.user(), HttpURLConnection.HTTP_OK, timestamp, new File(path).length());
             });
         } else {
