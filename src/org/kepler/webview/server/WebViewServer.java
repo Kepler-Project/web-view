@@ -92,6 +92,7 @@ import io.vertx.core.net.SocketAddress;
 import io.vertx.ext.auth.AuthProvider;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.AuthHandler;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
@@ -738,11 +739,36 @@ public class WebViewServer extends AbstractVerticle {
         // use custom auth handler with custom auth scheme to prevent
         // browsers from opening auth dialog.
         // FIXME read realm from conf file.
-        AuthHandler authHandler = new WebViewAuthHandlerImpl(_auth, "web-view");
-
-        // everything under /kepler needs to be authenticated.
-        router.route("/kepler/*").handler(authHandler);
-        router.route("/app").handler(authHandler);
+        AuthHandler authenticationHandler = new WebViewAuthHandlerImpl(_auth, "web-view");
+        
+        Handler<RoutingContext> authorizationHandler = new Handler<RoutingContext>() {
+            @Override
+            public void handle(RoutingContext c) {
+                if(c.user() == null) {
+                    c.next();
+                } else {
+                    c.user().isAuthorized("*", result -> {
+                        if(result.failed()) {
+                            c.response()
+                                .putHeader("Content-type", "text/plain")
+                                .setStatusCode(HttpURLConnection.HTTP_FORBIDDEN)
+                                .end(result.cause().getMessage());
+                        } else {
+                            c.next();
+                        }
+                    });
+                }
+            }            
+        };
+        
+        // everything under /kepler and /app needs to be
+        // authenticated and authorized.
+        router.route("/kepler/*")
+            .handler(authenticationHandler)
+            .handler(authorizationHandler);
+        router.route("/app")
+            .handler(authenticationHandler)
+            .handler(authorizationHandler);
         
         // TODO should these be under /kepler?
         router.getWithRegex("^/wf/(\\d+)$").handler(new WorkflowHandler(this));
@@ -762,18 +788,21 @@ public class WebViewServer extends AbstractVerticle {
         
         if(WebViewConfiguration.getHttpServerMetadataFileName() != null) {
             System.out.println("Metadata file set; requests at /login");
-            router.route("/login").handler(authHandler);
+            router.route("/login")
+                .handler(authenticationHandler)
+                .handler(authorizationHandler);
             LoginHandler loginHandler = new LoginHandler(this);
             router.route("/login").handler(loginHandler);
             
             // login session handler to check if session cookie is valid.
-            router.route("/loginSession").handler(loginSessionContext -> {
+            router.route("/loginSession").handler(authorizationHandler).handler(loginSessionContext -> {
                 // if not valid, return 400
                 if(loginSessionContext.user() == null) {
                     //System.out.println("user is null");
                     loginSessionContext.response()
                         .putHeader("Content-Type", "text/plain")
-                        .setStatusCode(HttpURLConnection.HTTP_BAD_REQUEST).end();
+                        .setStatusCode(HttpURLConnection.HTTP_BAD_REQUEST)
+                        .end();
                 } else {
                     // otherwise call login handler to return metadata.
                     loginSessionContext.next();
@@ -782,7 +811,8 @@ public class WebViewServer extends AbstractVerticle {
             router.route("/loginSession").handler(loginHandler);
             
             // logout handler to remove session and user.
-            router.route("/logout").handler(authHandler);
+            // FIXME what about authorization handler?
+            router.route("/logout").handler(authenticationHandler);
             router.route("/logout").handler(logoutContext -> {
                 //System.out.println("destroying session " + logoutContext.session().id());
                 logoutContext.session().destroy();
