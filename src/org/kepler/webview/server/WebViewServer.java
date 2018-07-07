@@ -94,6 +94,7 @@ import io.vertx.ext.auth.User;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.AuthHandler;
+import io.vertx.ext.web.handler.BasicAuthHandler;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.CorsHandler;
@@ -706,19 +707,12 @@ public class WebViewServer extends AbstractVerticle {
                     .allowedHeader("authorization"));
             System.out.println("CORS enabled for " + allowOriginPatternStr);
         }
+                
         
         // create cookie and session handlers
         // authenticated users are cached in the session so authentication
         // does not need to be performed for each request.
         router.route().handler(CookieHandler.create());
-        // TODO will LocalSessionStore work with multiple instances?
-        SessionStore sessionStore = LocalSessionStore.create(_vertx);
-        SessionHandler sessionHandler = SessionHandler.create(sessionStore)
-            .setSessionCookieName("web-view.session")
-            .setSessionTimeout(WebViewConfiguration.getHttpServerSessionTimeout());
-        router.route().handler(sessionHandler);
-        router.route().handler(UserSessionHandler.create(_auth));
-
         
         BodyHandler bodyHandler = BodyHandler.create();
         
@@ -735,11 +729,20 @@ public class WebViewServer extends AbstractVerticle {
         // NOTE: need to install the BodyHandler before any handlers that
         // make asynchronous calls such as BasicAuthHandler.
         router.route().handler(bodyHandler);
-
+        
+        SessionStore sessionStore = LocalSessionStore.create(_vertx);
+        SessionHandler sessionHandler = SessionHandler.create(sessionStore)
+            .setSessionCookieName("WebViewSession")
+            .setSessionTimeout(WebViewConfiguration.getHttpServerSessionTimeout());
+        router.route().handler(sessionHandler);
+        router.route().handler(UserSessionHandler.create(_auth));
+        
+        //System.out.println("session timeout = " + WebViewConfiguration.getHttpServerSessionTimeout());
+        
         // use custom auth handler with custom auth scheme to prevent
-        // browsers from opening auth dialog.
-        // FIXME read realm from conf file.
-        AuthHandler authenticationHandler = new WebViewAuthHandlerImpl(_auth, "web-view");
+        // browsers (e.g., chrome) from opening auth dialog.
+        // FIXME read realm from conf file.        
+        AuthHandler authenticationHandler = new WebViewAuthHandlerImpl(_auth, "WebView");
         
         Handler<RoutingContext> authorizationHandler = new Handler<RoutingContext>() {
             @Override
@@ -788,17 +791,25 @@ public class WebViewServer extends AbstractVerticle {
         
         if(WebViewConfiguration.getHttpServerMetadataFileName() != null) {
             System.out.println("Metadata file set; requests at /login");
+            
             router.route("/login")
-                .handler(authenticationHandler)
+                .handler(authenticationHandler)            
                 .handler(authorizationHandler);
+            
             LoginHandler loginHandler = new LoginHandler(this);
             router.route("/login").handler(loginHandler);
-            
+                        
             // login session handler to check if session cookie is valid.
-            router.route("/loginSession").handler(authorizationHandler).handler(loginSessionContext -> {
+            /*
+            router.route("/loginSession")
+                .handler(authorizationHandler)
+                .handler(loginSessionContext -> {
+                
+                System.out.println("session " + loginSessionContext.session().id());
+                
                 // if not valid, return 400
                 if(loginSessionContext.user() == null) {
-                    //System.out.println("user is null");
+                    System.out.println("user is null");
                     loginSessionContext.response()
                         .putHeader("Content-Type", "text/plain")
                         .setStatusCode(HttpURLConnection.HTTP_BAD_REQUEST)
@@ -809,10 +820,11 @@ public class WebViewServer extends AbstractVerticle {
                 }
             });
             router.route("/loginSession").handler(loginHandler);
+            */
             
             // logout handler to remove session and user.
-            // FIXME what about authorization handler?
             router.route("/logout").handler(authenticationHandler);
+            // FIXME what about authorization handler?
             router.route("/logout").handler(logoutContext -> {
                 //System.out.println("destroying session " + logoutContext.session().id());
                 logoutContext.session().destroy();
@@ -831,10 +843,9 @@ public class WebViewServer extends AbstractVerticle {
             System.out.println("Enabling http server table of contents at " + path);
             router.getWithRegex(path).handler(new TableOfContentsHandler(this));
         }
-
+        
         // add route that handles anything unmatched
         router.route().handler(new NoMatchHandler(this));
-
                 
         if(WebViewConfiguration.enableHttps()) {
             
