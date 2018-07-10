@@ -1084,13 +1084,23 @@ public class WebViewServer extends AbstractVerticle {
             StringBuilder buf = new StringBuilder("{");
             Iterator<Object> iter = ((JsonArray)value).iterator();
             while(iter.hasNext()) {
-                buf.append(iter.next());
+                Object item = iter.next();
+                // strings need to be surrounded by quotes in arrays
+                if(item instanceof String) {
+                    buf.append("\"")
+                        .append(item)
+                        .append("\"");
+                } else {
+                    buf.append(item);
+                }
                 if(iter.hasNext()) {
                     buf.append(",");
                 }
             }
             return buf.append("}").toString();
         } else {
+            // FIXME if value is a string and parameter is not in string mode,
+            // will this work?
             return value.toString();
         }
     }
