@@ -28,7 +28,11 @@
 package org.kepler.webview.server.app;
 
 import java.net.URI;
+import java.util.HashSet;
+import java.util.Set;
 
+import org.kepler.configuration.ConfigurationProperty;
+import org.kepler.webview.server.WebViewConfiguration;
 import org.kepler.webview.server.WebViewServer;
 
 import io.vertx.core.AsyncResult;
@@ -45,6 +49,17 @@ import io.vertx.ext.auth.User;
  */
 public class GetURL extends AbstractApp {
 
+    public GetURL() {
+        
+        super();
+                
+        for(ConfigurationProperty property:
+            WebViewConfiguration.getAppProperties("GetURL", "allowed.site")) {
+            _allowedSites.add(property.getValue());
+        }
+        
+    }
+    
     @Override
     public void exec(User user, JsonObject inputs, Handler<AsyncResult<JsonArray>> handler)
         throws Exception {
@@ -58,6 +73,11 @@ public class GetURL extends AbstractApp {
             uri = new URI(inputs.getString("url"));
         } catch(Exception e) {
             handler.handle(Future.failedFuture("Error parsing url: " + e.getMessage()));
+            return;
+        }
+        
+        if(!_allowedSites.contains(uri.getHost())) {
+            handler.handle(Future.failedFuture("Site is not allowed."));
             return;
         }
         
@@ -77,5 +97,7 @@ public class GetURL extends AbstractApp {
             });
         }).setFollowRedirects(true).end();
     }
+
+    private Set<String> _allowedSites = new HashSet<String>();
 
 }

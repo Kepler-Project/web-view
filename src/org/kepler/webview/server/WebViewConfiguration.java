@@ -30,6 +30,7 @@ package org.kepler.webview.server;
 
 import java.io.File;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
@@ -104,6 +105,17 @@ public class WebViewConfiguration {
             }
         }
         return null;
+    }
+    
+    /** Get config properties for an app. */
+    public static List<ConfigurationProperty> getAppProperties(String appName, String confName) {
+
+        for(ConfigurationProperty property : _getConfigurationProperties("server.apps.app")) {
+            if(property.getProperty("name").getValue().equals(appName)) {
+                return property.getProperties(confName);
+            }
+        }
+        return new LinkedList<ConfigurationProperty>();
     }
 
     /** Get an authentication provider based on the authentication type

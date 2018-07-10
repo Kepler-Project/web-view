@@ -27,6 +27,11 @@
             <app>
                 <name>GetURL</name>
                 <class>org.kepler.webview.server.app.GetURL</class>
+                <!--
+                <allowed>
+                    <site>data.neonscience.org</site>
+                </allowed>
+                -->
             </app>
             <app>
                 <name>CreateRO</name>
