@@ -53,6 +53,10 @@ public abstract class AbstractApp implements App {
         handler.handle(Future.succeededFuture(new JsonArray().add(new JsonObject().put(key, val))));        
     }
 
+    protected void _failedResponse(Handler<AsyncResult<JsonArray>> handler, String message) {
+        handler.handle(Future.failedFuture(message));
+    }
+    
     protected void _stringResponse(Handler<AsyncResult<JsonArray>> handler, String key, String val) {
         handler.handle(Future.succeededFuture(new JsonArray().add(new JsonObject().put(key, val))));        
     }
