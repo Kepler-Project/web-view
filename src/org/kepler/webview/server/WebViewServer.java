@@ -137,6 +137,16 @@ public class WebViewServer extends AbstractVerticle {
             return;
         }
         
+        for(String key: json.fieldNames()) {
+            if(!key.equals("app_name") &&
+                !key.equals("app_param") &&
+                !key.equals("prov") && 
+                !key.equals("reqid") &&
+                !key.equals("sync")) {
+                System.err.println("WARNING: unknown property in request: " + key);
+            }
+        }
+        
         // the following will block, e.g., waiting on the workspace lock,
         // so execute in blocking threads.
         _vertx.<JsonObject>executeBlocking(future -> {
@@ -338,7 +348,7 @@ public class WebViewServer extends AbstractVerticle {
                         return;
                     } else if(!vertx.cancelTimer(timerId)) {
                         System.err.println("Workflow timeout Timer does not exist.");
-                    }
+                    } else { System.out.println("cancelled timer."); }
                     
                     // see if there is a workflow exception
                     if(errorMessage[0] != null) {
@@ -750,7 +760,7 @@ public class WebViewServer extends AbstractVerticle {
                 if(c.user() == null) {
                     c.next();
                 } else {
-                    c.user().isAuthorized("*", result -> {
+                    c.user().isAuthorized("login", result -> {
                         if(result.failed()) {
                             c.response()
                                 .putHeader("Content-type", "text/plain")
