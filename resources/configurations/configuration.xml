@@ -95,6 +95,10 @@
             <!-- TODO <demoWorkflows>true</demoWorkflows> -->
         </tableOfContents>
 
+        <preload>
+            <!--<model>Foo.kar</model>-->
+        </preload>
+
         <roHub>
             <authToken></authToken>
             <uri>http://sandbox.rohub.org/rodl/ROs/</uri>

@@ -560,6 +560,19 @@ public class WebViewServer extends AbstractVerticle {
                     }
                 }
             );
+            
+            for(String model: WebViewConfiguration.getPreloadModels()) {
+                System.out.println("Preloading " + model);
+                try {
+                    if(_getModel(model) == null) {
+                        System.err.println("ERROR: Unable to find model for preload: " + model); 
+                    }
+                } catch (Exception e) {
+                    System.err.println("ERROR: Unable to preload " + model + ": " + e.getMessage());
+                }
+            }
+            
+            // TODO preload apps
                         
         } else {
             // not starting server, so set latch to 0
@@ -873,6 +886,8 @@ public class WebViewServer extends AbstractVerticle {
             
             int securePort = WebViewConfiguration.getHttpsServerPort();
             
+            // FIXME what if pemCert or pemKey do not exist?
+            
             HttpServerOptions options = new HttpServerOptions()
                 .setSsl(true)
                 .setPemKeyCertOptions(new PemKeyCertOptions()
@@ -1081,7 +1096,7 @@ public class WebViewServer extends AbstractVerticle {
     }
     
     /** Get a clone of a model. */
-    private CompositeActor _cloneModel(CompositeActor masterModel) throws CloneNotSupportedException {
+    private static CompositeActor _cloneModel(CompositeActor masterModel) throws CloneNotSupportedException {
         CompositeActor model = (CompositeActor)masterModel.clone(new Workspace());
         _clientBuffers.put(model,  new LinkedList<JsonObject>());
         //System.out.println("put " + model.hashCode());
@@ -1150,7 +1165,7 @@ public class WebViewServer extends AbstractVerticle {
      *  @return If a model with the specified name is loaded or can be
      *  found and parsed, returns the model. Otherwise, null.
      */
-    private CompositeActor _getModel(String name) throws Exception {
+    private static CompositeActor _getModel(String name) throws Exception {
                 
         //System.out.println("size = " + _models.size());
         

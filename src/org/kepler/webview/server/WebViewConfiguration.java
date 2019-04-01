@@ -68,6 +68,11 @@ public class WebViewConfiguration {
         return _getConfigurationBoolean("server.ssl.enable", false);
     }
 
+    /** Returns any models to be preloaded. */
+    public static Set<String> getPreloadModels() {
+        return _getConfigurationStrings("server.preload.model");        
+    }
+    
     /** Returns the auth token for ROHUB. */
     public static String getROHubAuthToken() {
         return _getConfigurationString("server.roHub.authToken", null);
