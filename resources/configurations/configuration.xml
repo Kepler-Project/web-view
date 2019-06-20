@@ -103,11 +103,6 @@
             <authToken></authToken>
             <uri>http://sandbox.rohub.org/rodl/ROs/</uri>
         </roHub>
-
-        <!-- set true if deploying in kubernetes with dns discovery for hazelcast -->
-        <deployInKubernetes>false</deployInKubernetes>
-        <hazelcastDiscoveryK8sDnsService>hazelcast-service.wifire.svc.cluster.local</hazelcastDiscoveryK8sDnsService>
-
     </server>
 
 </config>
