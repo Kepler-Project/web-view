@@ -41,6 +41,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
@@ -1124,12 +1125,27 @@ public class WebViewServer extends AbstractVerticle {
                         .append(item)
                         .append("\"");
                 } else {
-                    buf.append(item);
+                    // item may be a complex type (e.g., record token)
+                    buf.append(_convertJSONToTokenString(item));
                 }
                 if(iter.hasNext()) {
                     buf.append(",");
                 }
             }
+            return buf.append("}").toString();
+        } else if(value instanceof JsonObject) {
+            // convert json objects to ptolemy record strings.
+            StringBuilder buf = new StringBuilder("{");
+            Iterator<Entry<String, Object>> iter = ((JsonObject)value).iterator();
+            while(iter.hasNext()) {
+                Entry<String,Object> entry = iter.next();
+                buf.append(entry.getKey())
+                    .append("=")
+                    .append(_convertJSONToTokenString(entry.getValue()));
+                if(iter.hasNext()) {
+                    buf.append(",");
+                }
+            };            
             return buf.append("}").toString();
         } else {
             // FIXME if value is a string and parameter is not in string mode,
