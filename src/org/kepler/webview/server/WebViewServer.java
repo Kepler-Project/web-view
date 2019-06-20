@@ -472,6 +472,15 @@ public class WebViewServer extends AbstractVerticle {
         VertxOptions options = new VertxOptions()
                 .setWorkerPoolSize(workerPoolSize)
                 .setMaxWorkerExecuteTime(Long.MAX_VALUE);
+
+        Config hazelcastConfig = new Config();
+        ClusterManager mgr = new HazelcastClusterManager(hazelcastConfig);
+        if (WebViewConfiguration.deployInKubernetes()) {
+            hazelcastConfig.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+            hazelcastConfig.getNetworkConfig().getJoin().getKubernetesConfig().setEnabled(true)
+                    .setProperty("service-dns", WebViewConfiguration.getHazelcastDiscoveryDnsServiceName());
+        }
+        options.setClusterManager(mgr);
         
         Vertx.clusteredVertx(options, result -> {
             if(result.failed()) {
@@ -762,7 +771,7 @@ public class WebViewServer extends AbstractVerticle {
         // make asynchronous calls such as BasicAuthHandler.
         router.route().handler(bodyHandler);
         
-        SessionStore sessionStore = LocalSessionStore.create(_vertx);
+        SessionStore sessionStore = ClusteredSessionStore.create(_vertx);
         SessionHandler sessionHandler = SessionHandler.create(sessionStore)
             .setSessionCookieName("WebViewSession")
             .setSessionTimeout(WebViewConfiguration.getHttpServerSessionTimeout());

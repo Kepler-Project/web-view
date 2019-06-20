@@ -104,6 +104,8 @@
             <uri>http://sandbox.rohub.org/rodl/ROs/</uri>
         </roHub>
 
+        <deployInKubernetes>false</deployInKubernetes>
+        <hazelcastDiscoveryK8sDnsService></hazelcastDiscoveryK8sDnsService>
     </server>
 
 </config>

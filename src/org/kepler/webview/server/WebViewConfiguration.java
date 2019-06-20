@@ -424,4 +424,12 @@ public class WebViewConfiguration {
 
     /** Default session timeout in milliseconds */
     private static final long DEFAULT_WEBVIEW_SERVER_SESSION_TIMEOUT = 3600*1000;
+
+    public static boolean deployInKubernetes() {
+        return _getConfigurationBoolean("server.deployInKubernetes", false);
     }
+
+    public static String getHazelcastDiscoveryDnsServiceName() {
+        return _getConfigurationString("server.hazelcastDiscoveryK8sDnsService", null);
+    }
+}
