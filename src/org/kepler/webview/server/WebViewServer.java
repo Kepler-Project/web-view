@@ -115,6 +115,15 @@ import ptolemy.moml.MoMLParser;
 import ptolemy.moml.filter.BackwardCompatibility;
 import ptolemy.util.MessageHandler;
 
+import com.hazelcast.config.Config;
+import io.vertx.core.spi.cluster.ClusterManager;
+import io.vertx.ext.web.Session;
+import io.vertx.ext.web.handler.CookieHandler;
+import io.vertx.ext.web.handler.SessionHandler;
+import io.vertx.ext.web.sstore.ClusteredSessionStore;
+import io.vertx.ext.web.sstore.SessionStore;
+import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
+
 public class WebViewServer extends AbstractVerticle {
     
     /** Execute an app.
