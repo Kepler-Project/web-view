@@ -48,35 +48,5 @@ public class NoneAuth implements AuthProvider {
     public void authenticate(JsonObject authInfo, Handler<AsyncResult<User>> handler) {
         handler.handle(Future.succeededFuture(new NoneUser(authInfo.getString("username"),"none")));
     }
-    
-    protected static class NoneUser extends AbstractUser {
-
-        public NoneUser(String username, String group) {
-            _group = group;
-            _username = username;
-        }
-        
-        @Override
-        public JsonObject principal() {
-            return new JsonObject().put("username", _username)
-                .put("fullname", _username)
-                .put("groups", _group);
-        }
-
-        /** Do nothing. */
-        @Override
-        public void setAuthProvider(AuthProvider arg0) {
-        }
-
-        @Override
-        protected void doIsPermitted(String authority, 
-                Handler<AsyncResult<Boolean>> permittedHandler) {
-            // Everything is authorized.
-            permittedHandler.handle(Future.succeededFuture(Boolean.TRUE));
-        }
-        
-        private String _group;
-        private String _username;
-    }
 
 }

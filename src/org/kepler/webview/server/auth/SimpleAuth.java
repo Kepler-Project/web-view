@@ -53,18 +53,18 @@ public class SimpleAuth implements AuthProvider {
             handler.handle(Future.failedFuture("authInfo must contain username in 'username' field"));
             return;
         }
-        
+
         String password = authInfo.getString("password");
         if (password == null) {
             handler.handle(Future.failedFuture("authInfo must contain password in 'password' field"));
             return;
         }
-        
+
         String group = WebViewConfiguration.getSimpleAuthGroup(username, password);
         if(group == null) {
             handler.handle(Future.failedFuture("Incorrect password."));
         } else {
-            handler.handle(Future.succeededFuture(new NoneAuth.NoneUser(username, group)));
+            handler.handle(Future.succeededFuture(new NoneUser(username, group)));
         }
     }
 }
