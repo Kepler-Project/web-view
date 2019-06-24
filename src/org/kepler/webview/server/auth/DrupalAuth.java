@@ -154,70 +154,8 @@ public class DrupalAuth implements AuthProvider {
         if(sessionCookieStr != null) {
             request.putHeader("Cookie", sessionCookieStr);
         }
-        
-        request.end();        
-    }
-    
-    private static class DrupalUser extends AbstractUser {
-        
-        public DrupalUser(JsonObject loginJson, String groupsField, String fullNameField, String role) {
-            
-            _loginJson = loginJson;
-            _role = role;
-            
-            _principal = new JsonObject().put("username", loginJson.getJsonObject("user").getString("name"));
-            _principal.put("fullname", _getDrupalField(loginJson, fullNameField, loginJson.getJsonObject("user").getString("name")));
-            _principal.put("groups", _getDrupalField(loginJson, groupsField, null));            
 
-            //System.out.println(fullNameField);
-            
-            //System.out.println(_loginJson.encodePrettily());            
-            //System.out.println("principal: " + _principal.encodePrettily());            
-        }
-        
-        @Override
-        public JsonObject principal() {
-            return _principal;
-        }
-
-        @Override
-        public void setAuthProvider(AuthProvider provider) {
-        }
-
-        @Override
-        protected void doIsPermitted(String authority, Handler<AsyncResult<Boolean>> handler) {
-            //System.out.println("loginJson: " + loginJson);
-            Boolean found = Boolean.FALSE;
-            for(Object value: _loginJson.getJsonObject("user").getJsonObject("roles").getMap().values()) {
-                //System.out.println("user has role: " + value);
-                if(value.equals(_role)) {
-                    found = Boolean.TRUE;
-                    break;
-                }
-            };
-            //System.out.println("doIsPermitted: " + found);
-            handler.handle(Future.succeededFuture(found));
-        }
-        
-        private static String _getDrupalField(JsonObject loginJson, String fieldName, String defaultValue) {
-            
-            if(loginJson.getJsonObject("user").containsKey(fieldName)) {
-                // groupsField key may be an empty array, so check type
-                // before assuming it's a JsonObject.
-                Object fieldObject = loginJson.getJsonObject("user").getValue(fieldName);
-                if(fieldObject instanceof JsonObject) {
-                    return ((JsonObject)fieldObject)
-                            .getJsonArray("und")
-                            .getJsonObject(0)
-                            .getString("value");
-                }
-            }
-            return defaultValue;
-        }
-
-        private JsonObject _loginJson;
-        private JsonObject _principal;
-        private String _role;
+        request.end();
     }
     
     /** HTTP client to make requests from drupal. */
