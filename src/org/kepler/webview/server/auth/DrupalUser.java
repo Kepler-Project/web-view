@@ -3,14 +3,14 @@ package org.kepler.webview.server.auth;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.Future;
 import io.vertx.core.Handler;
-import io.vertx.core.http.HttpClient;
-import io.vertx.core.http.HttpClientOptions;
-import io.vertx.core.http.HttpClientRequest;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.AbstractUser;
 import io.vertx.ext.auth.AuthProvider;
-import io.vertx.ext.auth.User;
 
+/** NOTE: do not use this class if in clustering mode
+ *  since ClusterSerializable not implemented.
+ * 
+ */
 public class DrupalUser extends AbstractUser {
 
     public DrupalUser() {}
