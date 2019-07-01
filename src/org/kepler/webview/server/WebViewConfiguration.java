@@ -426,10 +426,25 @@ public class WebViewConfiguration {
     private static final long DEFAULT_WEBVIEW_SERVER_SESSION_TIMEOUT = 3600*1000;
 
     public static boolean deployInKubernetes() {
-        return _getConfigurationBoolean("server.deployInKubernetes", false);
+        return _getConfigurationBoolean("server.cluster.deployInKubernetes", false);
     }
 
     public static String getHazelcastDiscoveryDnsServiceName() {
-        return _getConfigurationString("server.hazelcastDiscoveryK8sDnsService", null);
+        return _getConfigurationString("server.cluster.hazelcastDiscoveryK8sDnsService", null);
     }
+
+    /** Get if vertx should use hazelcast for clustered mode. */
+    public static boolean shouldStartClusterHazelcast() {
+        String typeStr = _getConfigurationString("server.cluster.type", null);
+        return (typeStr != null && typeStr.equals("hazelcast"));
+    }
+    
+    /** Get if vertx should start in clustered mode. */
+    public static boolean shouldStartCluster() {
+        String typeStr = _getConfigurationString("server.cluster.type", null);
+        return (typeStr != null && typeStr.trim().length() > 0 &&
+                !typeStr.toLowerCase().equals("none") &&
+                !typeStr.toLowerCase().equals("false"));
+    }
+
 }

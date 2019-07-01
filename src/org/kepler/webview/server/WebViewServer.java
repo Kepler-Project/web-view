@@ -73,6 +73,8 @@ import org.kepler.webview.server.handler.TableOfContentsHandler;
 import org.kepler.webview.server.handler.WorkflowHandler;
 import org.kepler.webview.server.handler.WorkflowWebSocketHandler;
 
+import com.hazelcast.config.Config;
+
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.AsyncResult;
 import io.vertx.core.DeploymentOptions;
@@ -90,6 +92,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.PemKeyCertOptions;
 import io.vertx.core.net.SocketAddress;
+import io.vertx.core.spi.cluster.ClusterManager;
 import io.vertx.ext.auth.AuthProvider;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.web.Router;
@@ -100,8 +103,10 @@ import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.SessionHandler;
 import io.vertx.ext.web.handler.UserSessionHandler;
+import io.vertx.ext.web.sstore.ClusteredSessionStore;
 import io.vertx.ext.web.sstore.LocalSessionStore;
 import io.vertx.ext.web.sstore.SessionStore;
+import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
 import ptolemy.actor.CompositeActor;
 import ptolemy.actor.ExecutionListener;
 import ptolemy.actor.Manager;
@@ -114,15 +119,6 @@ import ptolemy.kernel.util.Workspace;
 import ptolemy.moml.MoMLParser;
 import ptolemy.moml.filter.BackwardCompatibility;
 import ptolemy.util.MessageHandler;
-
-import com.hazelcast.config.Config;
-import io.vertx.core.spi.cluster.ClusterManager;
-import io.vertx.ext.web.Session;
-import io.vertx.ext.web.handler.CookieHandler;
-import io.vertx.ext.web.handler.SessionHandler;
-import io.vertx.ext.web.sstore.ClusteredSessionStore;
-import io.vertx.ext.web.sstore.SessionStore;
-import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
 
 public class WebViewServer extends AbstractVerticle {
     
@@ -482,129 +478,141 @@ public class WebViewServer extends AbstractVerticle {
                 .setWorkerPoolSize(workerPoolSize)
                 .setMaxWorkerExecuteTime(Long.MAX_VALUE);
 
-        Config hazelcastConfig = new Config();
-        ClusterManager mgr = new HazelcastClusterManager(hazelcastConfig);
-        if (WebViewConfiguration.deployInKubernetes()) {
-            hazelcastConfig.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
-            hazelcastConfig.getNetworkConfig().getJoin().getKubernetesConfig().setEnabled(true)
-                    .setProperty("service-dns", WebViewConfiguration.getHazelcastDiscoveryDnsServiceName());
-        }
-        options.setClusterManager(mgr);
-        
-        Vertx.clusteredVertx(options, result -> {
-            if(result.failed()) {
-                MessageHandler.error("Failed to get vertx context.", result.cause());
-                // TODO shutdown?
-            } else {
-                _vertx = result.result();
-                
-                String rootDir = WebViewConfiguration.getHttpServerRootDir();
-                if(rootDir != null &&
-                    !rootDir.equals(WebViewConfiguration.DEFAULT_WEBVIEW_SERVER_ROOT_DIR)) {
-                    _rootDir = rootDir;
-                    System.out.println("Web view root dir is " + _rootDir);
-                }
-                
-                _appendIndexHtml = WebViewConfiguration.getHttpServerAppendIndexHtml();
-                
-                _workflowTimeout = WebViewConfiguration.getHttpServerWorkflowTimeout();
-                
-                // register as an updater to get window open and close events
-                KeplerGraphFrame.addUpdater(_updater);
-               
-                // start logging thread
-                _loggingThread = new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        String logPath = WebViewConfiguration.getHttpServerLogPath();
-                        System.out.println("Web-view logging to " + logPath);
-                        try(FileWriter writer = new FileWriter(logPath, true)) {
-                            String message;
-                            try {
-                                while((message = _loggingQueue.take()) != STOP_LOGGING_THREAD_MESSAGE) {
-                                    writer.write(message);
-                                    writer.write('\n');
-                                    writer.flush();
-                                }
-                            } catch (InterruptedException e) {
-                                MessageHandler.error("Interrupted while waiting in logging thread.", e);
-                            }
-                        } catch (IOException e) {
-                            MessageHandler.error("Error trying to write to web-view server log " +
-                                    logPath, e);
-                        }
-                    }
-                });
-                _loggingThread.start();   
-                
-                
-                boolean daemon = WebViewConfiguration.shouldStartHttpServerAsDaemon();
-                
-                if(daemon) {
-                    System.out.println("Loading MoML filters.");
-                    
-                    // We set the list of MoMLFilters to handle Backward Compatibility.
-                    MoMLParser.setMoMLFilters(BackwardCompatibility.allFilters());
-                    
-                    // load the gui and cache configuration since we need the CacheManager
-                    // to load the KAREntryHandlers for exporting provenance kars.
-                    try {
-                        ConfigurationApplication.readConfiguration(
-                            ConfigurationApplication.specToURL("ptolemy/configs/kepler/ConfigGUIAndCache.xml"));
-                    } catch (Exception e) {
-                        MessageHandler.error("Error creating Configuration.", e);
-                    }
-                }
-
-                if(WebViewConfiguration.shouldStartHttpServer() || daemon) {
-
-                    /* TODO still necessary?
-                    List<URL> list = new LinkedList<URL>();
-                    for(String path : System.getProperty("java.class.path").split(File.pathSeparator)) {
-                        try {
-                            list.add(new File(path).toURI().toURL());
-                        } catch (MalformedURLException e) {
-                            MessageHandler.error("Bad URL.", e);
-                        }
-                    }
-                     */
-                    // list.toArray(new URL[list.size()]),
-                    
-                    DeploymentOptions deploymentOptions = new DeploymentOptions()
-                            .setInstances(WebViewConfiguration.getHttpServerInstances());
-                    
-                    WebViewServer.vertx().deployVerticle(
-                        WebViewServer.class.getName(),
-                        deploymentOptions,
-                        deployResult -> {
-                            if(deployResult.failed()) {
-                                MessageHandler.error("Failed to deploy web view server.", deployResult.cause());
-                                // TODO shut down kepler.
-                            }
-                        }
-                    );
-                    
-                    for(String model: WebViewConfiguration.getPreloadModels()) {
-                        System.out.println("Preloading " + model);
-                        try {
-                            if(_getModel(model) == null) {
-                                System.err.println("ERROR: Unable to find model for preload: " + model); 
-                            }
-                        } catch (Exception e) {
-                            System.err.println("ERROR: Unable to preload " + model + ": " + e.getMessage());
-                        }
-                    }
-                    
-                    // TODO preload apps
-                                
+        if(WebViewConfiguration.shouldStartClusterHazelcast()) {
+            Config hazelcastConfig = new Config();
+            ClusterManager mgr = new HazelcastClusterManager(hazelcastConfig);
+            if (WebViewConfiguration.deployInKubernetes()) {
+                hazelcastConfig.getNetworkConfig().getJoin().getMulticastConfig().setEnabled(false);
+                hazelcastConfig.getNetworkConfig().getJoin().getKubernetesConfig().setEnabled(true)
+                        .setProperty("service-dns", WebViewConfiguration.getHazelcastDiscoveryDnsServiceName());
+            }
+            options.setClusterManager(mgr);
+            Vertx.clusteredVertx(options, result -> {
+                if(result.failed()) {
+                    MessageHandler.error("Failed to get vertx context.", result.cause());
+                    // TODO shutdown?
                 } else {
-                    // not starting server, so set latch to 0
-                    Shutdown.shutdownLatch.countDown();
+                    _vertx = result.result();
+                    _initializeAfterCreatingVertx();
                 }
-
+            });
+        } else if(!WebViewConfiguration.shouldStartCluster()) {
+            _vertx = Vertx.vertx(options);
+            _initializeAfterCreatingVertx();
+        } else {
+            MessageHandler.error("Unknown value for cluster type in configuration.xml.");
+            Shutdown.shutdownLatch.countDown();
+        }
+                     
+    }
+    
+    private static void _initializeAfterCreatingVertx() {
+        
+                
+        String rootDir = WebViewConfiguration.getHttpServerRootDir();
+        if(rootDir != null &&
+            !rootDir.equals(WebViewConfiguration.DEFAULT_WEBVIEW_SERVER_ROOT_DIR)) {
+            _rootDir = rootDir;
+            System.out.println("Web view root dir is " + _rootDir);
+        }
+        
+        _appendIndexHtml = WebViewConfiguration.getHttpServerAppendIndexHtml();
+        
+        _workflowTimeout = WebViewConfiguration.getHttpServerWorkflowTimeout();
+        
+        // register as an updater to get window open and close events
+        KeplerGraphFrame.addUpdater(_updater);
+       
+        // start logging thread
+        _loggingThread = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String logPath = WebViewConfiguration.getHttpServerLogPath();
+                System.out.println("Web-view logging to " + logPath);
+                try(FileWriter writer = new FileWriter(logPath, true)) {
+                    String message;
+                    try {
+                        while((message = _loggingQueue.take()) != STOP_LOGGING_THREAD_MESSAGE) {
+                            writer.write(message);
+                            writer.write('\n');
+                            writer.flush();
+                        }
+                    } catch (InterruptedException e) {
+                        MessageHandler.error("Interrupted while waiting in logging thread.", e);
+                    }
+                } catch (IOException e) {
+                    MessageHandler.error("Error trying to write to web-view server log " +
+                            logPath, e);
+                }
             }
         });
+        _loggingThread.start();   
         
+        
+        boolean daemon = WebViewConfiguration.shouldStartHttpServerAsDaemon();
+        
+        if(daemon) {
+            System.out.println("Loading MoML filters.");
+            
+            // We set the list of MoMLFilters to handle Backward Compatibility.
+            MoMLParser.setMoMLFilters(BackwardCompatibility.allFilters());
+            
+            // load the gui and cache configuration since we need the CacheManager
+            // to load the KAREntryHandlers for exporting provenance kars.
+            try {
+                ConfigurationApplication.readConfiguration(
+                    ConfigurationApplication.specToURL("ptolemy/configs/kepler/ConfigGUIAndCache.xml"));
+            } catch (Exception e) {
+                MessageHandler.error("Error creating Configuration.", e);
+            }
+        }
+
+        if(WebViewConfiguration.shouldStartHttpServer() || daemon) {
+
+            /* TODO still necessary?
+            List<URL> list = new LinkedList<URL>();
+            for(String path : System.getProperty("java.class.path").split(File.pathSeparator)) {
+                try {
+                    list.add(new File(path).toURI().toURL());
+                } catch (MalformedURLException e) {
+                    MessageHandler.error("Bad URL.", e);
+                }
+            }
+             */
+            // list.toArray(new URL[list.size()]),
+            
+            DeploymentOptions deploymentOptions = new DeploymentOptions()
+                    .setInstances(WebViewConfiguration.getHttpServerInstances());
+            
+            WebViewServer.vertx().deployVerticle(
+                WebViewServer.class.getName(),
+                deploymentOptions,
+                deployResult -> {
+                    if(deployResult.failed()) {
+                        MessageHandler.error("Failed to deploy web view server.", deployResult.cause());
+                        // TODO shut down kepler.
+                    }
+                }
+            );
+            
+            for(String model: WebViewConfiguration.getPreloadModels()) {
+                System.out.println("Preloading " + model);
+                try {
+                    if(_getModel(model) == null) {
+                        System.err.println("ERROR: Unable to find model for preload: " + model); 
+                    }
+                } catch (Exception e) {
+                    System.err.println("ERROR: Unable to preload " + model + ": " + e.getMessage());
+                }
+            }
+            
+            // TODO preload apps
+                        
+        } else {
+            // not starting server, so set latch to 0
+            Shutdown.shutdownLatch.countDown();
+        }
+
     }
     
     /** Log an http server request.
@@ -659,6 +667,7 @@ public class WebViewServer extends AbstractVerticle {
         
         String userNameStr = "-";
         if(user != null) {
+            //System.out.println(user);
             userNameStr = user.principal().getString("username");
         }
                     
@@ -780,7 +789,12 @@ public class WebViewServer extends AbstractVerticle {
         // make asynchronous calls such as BasicAuthHandler.
         router.route().handler(bodyHandler);
         
-        SessionStore sessionStore = ClusteredSessionStore.create(_vertx);
+        SessionStore sessionStore;
+        if(WebViewConfiguration.shouldStartCluster()) {
+            sessionStore = ClusteredSessionStore.create(_vertx);
+        } else {
+            sessionStore = LocalSessionStore.create(_vertx);
+        }
         SessionHandler sessionHandler = SessionHandler.create(sessionStore)
             .setSessionCookieName("WebViewSession")
             .setSessionTimeout(WebViewConfiguration.getHttpServerSessionTimeout());
