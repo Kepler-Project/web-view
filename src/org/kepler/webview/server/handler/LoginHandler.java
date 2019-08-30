@@ -167,7 +167,18 @@ public class LoginHandler extends BaseHandler {
                     returnMetadataJson.add(m.copy());
                 }
             };
+                        
             returnJson.put("metadata", returnMetadataJson);
+        }
+        
+        // remove specific fields before returning to client.
+        for(int i = 0; i < returnJson.getJsonArray("metadata").size(); i++) {
+            JsonObject obj = returnJson.getJsonArray("metadata").getJsonObject(i);
+            for(String key: _fieldsToRemove) {
+                if(obj.containsKey(key)) {
+                    obj.remove(key);
+                }
+            }
         }
                
         //System.out.println(returnJson.encodePrettily());
@@ -188,4 +199,7 @@ public class LoginHandler extends BaseHandler {
     
     /** Metadata JSON cached from reading metadata file. */
     private JsonArray _metadataJson;
+    
+    /** Names of fields to remove from metadata json before returning to the client. */
+    private static String[] _fieldsToRemove = {"groups", "private"};
 }
