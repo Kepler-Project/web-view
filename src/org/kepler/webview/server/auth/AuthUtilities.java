@@ -31,6 +31,7 @@ package org.kepler.webview.server.auth;
 import java.util.HashSet;
 import java.util.Set;
 
+import io.vertx.core.json.JsonArray;
 import io.vertx.ext.auth.User;
 
 /** Utilities for authentication. 
@@ -40,19 +41,29 @@ import io.vertx.ext.auth.User;
  */
 public class AuthUtilities {
 
+    /** Get the channels for a vertx user. 
+     * @param user The vertx user.
+     * @return a set of channel names that the user belongs to.
+     */
+    public static Set<String> getChannels(User user) {
+        return _getSet(user.principal().getJsonArray("channels"));
+    }
+
     /** Get the groups for a vertx user. 
      * @param user The vertx user.
      * @return a set of group names that the user belongs to.
      */
     public static Set<String> getGroups(User user) {
-        
-        Set<String> groupSet = new HashSet<String>();        
-        String groups = user.principal().getString("groups");
-        if(groups != null) {
-            for(String group : groups.split(",")) {
-                groupSet.add(group.trim());
+        return _getSet(user.principal().getJsonArray("groups"));
+    }
+    
+    private static Set<String> _getSet(JsonArray array) {
+        Set<String> set = new HashSet<String>();        
+        if(array != null) {
+            for(Object o: array) {
+                set.add(((String)o).trim());
             }
         }
-        return groupSet;
+        return set;
     }
 }

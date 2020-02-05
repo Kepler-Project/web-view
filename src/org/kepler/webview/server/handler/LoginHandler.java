@@ -127,11 +127,12 @@ public class LoginHandler extends BaseHandler {
         // construct the response json
         
         JsonObject principal = context.user().principal();
-        Set<String> userGroups = AuthUtilities.getGroups(context.user());        
+        //Set<String> userGroups = AuthUtilities.getGroups(context.user());        
         
-        JsonObject returnJson = new JsonObject();
+        JsonObject returnJson = new JsonObject().mergeIn(principal);
         
         // add the username
+        /*
         returnJson.put("username", principal.getString("username"));
         returnJson.put("fullname", principal.getString("fullname"));
         
@@ -141,10 +142,19 @@ public class LoginHandler extends BaseHandler {
             groupsArray.add(groupName);
         }
         returnJson.put("groups", groupsArray);
+        */
+        
+        boolean isAdmin = false;
+        for(Object g: returnJson.getJsonArray("groups")) {
+            if(g.equals("admin")) {
+                isAdmin = true;
+                break;
+            }
+        }
 
         // add metadata
 
-        if(userGroups.contains("admin")) {
+        if(isAdmin) {
             returnJson.put("metadata", _metadataJson.copy());
         } else { 
             JsonArray returnMetadataJson = new JsonArray();
@@ -156,9 +166,11 @@ public class LoginHandler extends BaseHandler {
                 } else {
                     JsonArray groupsList = m.getJsonArray("groups");
                     for(int j = 0; j < groupsList.size(); j++) {
-                        if(userGroups.contains(groupsList.getString(j))) {
-                            inGroup = true;
-                            break;
+                        for(Object g: returnJson.getJsonArray("groups")) {
+                            if(g.equals(groupsList.getString(j))) {
+                                inGroup = true;
+                                break;
+                            }
                         }
                     }
                 }
