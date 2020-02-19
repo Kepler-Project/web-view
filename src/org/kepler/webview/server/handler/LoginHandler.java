@@ -29,10 +29,8 @@
 package org.kepler.webview.server.handler;
 
 import java.net.HttpURLConnection;
-
 import org.kepler.webview.server.WebViewConfiguration;
 import org.kepler.webview.server.WebViewServer;
-
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -74,7 +72,18 @@ public class LoginHandler extends BaseHandler {
                         if(readResult.succeeded()) {
                             // update the cached json
                             try {
-                                _metadataJson = readResult.result().toJsonArray();
+                                
+                                JsonArray newMetadata = readResult.result().toJsonArray();
+                                for(int i = 0; i < newMetadata.size(); i++) {
+                                    if(newMetadata.getJsonObject(i).containsKey("enable") &&
+                                        !newMetadata.getJsonObject(i).getBoolean("enable").booleanValue()) {
+
+                                        newMetadata.remove(i);
+                                        
+                                        i--;
+                                    }
+                                }
+                                _metadataJson = newMetadata;
                             } catch(Throwable t) {
                                 context.response()
                                     .putHeader("Content-Type", "text/plain")

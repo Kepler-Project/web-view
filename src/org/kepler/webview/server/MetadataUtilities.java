@@ -99,7 +99,17 @@ public class MetadataUtilities {
                         if(readResult.succeeded()) {
                             // update the cached json
                             try {
-                                _metadataJson = readResult.result().toJsonArray();
+                                JsonArray newMetadata = readResult.result().toJsonArray();
+                                for(int i = 0; i < newMetadata.size(); i++) {
+                                    if(newMetadata.getJsonObject(i).containsKey("enable") &&
+                                        !newMetadata.getJsonObject(i).getBoolean("enable").booleanValue()) {
+
+                                        newMetadata.remove(i);
+                                        
+                                        i--;
+                                    }
+                                }
+                                _metadataJson = newMetadata;
                                 future.complete(_metadataJson.copy());
                             } catch(Throwable t) {
                                 future.fail(t.getMessage());
