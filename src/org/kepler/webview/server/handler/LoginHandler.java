@@ -29,11 +29,9 @@
 package org.kepler.webview.server.handler;
 
 import java.net.HttpURLConnection;
-import java.util.Set;
 
 import org.kepler.webview.server.WebViewConfiguration;
 import org.kepler.webview.server.WebViewServer;
-import org.kepler.webview.server.auth.AuthUtilities;
 
 import io.vertx.core.file.FileSystem;
 import io.vertx.core.json.JsonArray;
