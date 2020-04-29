@@ -41,14 +41,6 @@ import io.vertx.ext.auth.User;
  */
 public class AuthUtilities {
 
-    /** Get the channels for a vertx user. 
-     * @param user The vertx user.
-     * @return a set of channel names that the user belongs to.
-     */
-    public static Set<String> getChannels(User user) {
-        return _getSet(user.principal().getJsonArray("channels"));
-    }
-
     /** Get the groups for a vertx user. 
      * @param user The vertx user.
      * @return a set of group names that the user belongs to.
