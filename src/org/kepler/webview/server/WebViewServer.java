@@ -97,6 +97,8 @@ import io.vertx.ext.auth.AuthProvider;
 import io.vertx.ext.auth.User;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.client.HttpResponse;
+import io.vertx.ext.web.client.WebClient;
 import io.vertx.ext.web.handler.AuthHandler;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CookieHandler;
@@ -216,13 +218,16 @@ public class WebViewServer extends AbstractVerticle {
     }
     
     /** Execute a workflow.
-     *  @param json The JSON object with the workflow name and any parameters.
+     *  @param requestJson The JSON object with the workflow name and any parameters.
      *  @param handler Asynchronous handler to receive the a JSON object with any results.
      */
-    public void executeWorkflow(JsonObject json, User user,
+    public void executeWorkflow(JsonObject requestJson, User user,
         Handler<AsyncResult<JsonObject>> handler) {
 
-        String wfName = json.getString("wf_name");
+        // TODO check for unknown arguments in the request json
+        
+        
+        String wfName = requestJson.getString("wf_name");
         //System.out.println("execute workflow " + wfName);
         
         if(wfName == null || wfName.trim().isEmpty()) {
@@ -238,13 +243,30 @@ public class WebViewServer extends AbstractVerticle {
         // TODO correct way to convert Buffer to JSON?
         //System.out.println("recvd: " + json);
        
+        boolean useWebHook = requestJson.containsKey("webhook");
+        boolean runSynchronously = requestJson.getBoolean("sync", false);
+        boolean recordProvenance = requestJson.getBoolean("prov", true);
+        
+        // cannot run async without provenance or webhook
+        if(!runSynchronously && !recordProvenance && !useWebHook) {
+            handler.handle(Future.failedFuture("Cannot execute workflow asynchronously " +
+                "without recording provenance or using webhook."));
+            return;
+        }
+        
+        // cannot run synchronously and use webhook
+        if(runSynchronously && useWebHook) {
+            handler.handle(Future.failedFuture("Cannot execute workflow synchronously " +
+                "and use webhook."));
+            return;
+        }
+        
         // the following will block, e.g., waiting on the workspace lock,
         // so execute in blocking threads.
         _vertx.<JsonObject>executeBlocking(future -> {
 
             //System.out.println("executeBlocking " + wfName);
             
-            boolean runSynchronously = false;
             ProvenanceRecorder recorder = null;
             CompositeActor model = null;
             
@@ -257,19 +279,12 @@ public class WebViewServer extends AbstractVerticle {
                 }
                                     
                 try {
-                    _setModelParameters(model, json, user);
+                    _setModelParameters(model, requestJson, user);
                 } catch (IllegalActionException e) {
                     throw new Exception("Error setting parameters: " + e.getMessage());
                 }
                 
-                boolean recordProvenance = json.getBoolean("prov", true);
-                runSynchronously = json.getBoolean("sync", false);
-                
-                // cannot run async without provenance
-                if(!runSynchronously && !recordProvenance) {
-                    throw new Exception("Cannot execute workflow asynchronously without recording provenance.");
-                }
-                
+                                
                 recorder = ProvenanceRecorder.getDefaultProvenanceRecorder(model);
 
                 if(recordProvenance) {
@@ -322,9 +337,10 @@ public class WebViewServer extends AbstractVerticle {
                 
                 manager.addExecutionListener(managerListener);
                 
-                if(runSynchronously) {
+                if(runSynchronously || useWebHook) {
                     
                     final String[] runLSIDStr = new String[1];
+                    
                     if(recordProvenance) {
                         recorder.addPiggyback(new Recording() {
                             @Override
@@ -342,6 +358,12 @@ public class WebViewServer extends AbstractVerticle {
                         future.fail("Execution timeout.");
                     });
                     
+                    // if using webhook, send response to client now that
+                    // workflow execution has started
+                    if(useWebHook) {
+                        handler.handle(Future.succeededFuture(new JsonObject()));
+                    }
+
 
                     // call execute() instead of run, otherwise exceptions
                     // go to execution listener asynchronously.
@@ -387,8 +409,38 @@ public class WebViewServer extends AbstractVerticle {
                     // send the successful response
                     //System.out.println(arrayJson.encodePrettily());
                     responseJson.put("responses", arrayJson);
-                    future.complete(responseJson);
-                } else { // asynchronous             
+                    
+                    if(useWebHook) {
+                        String webhookStr = requestJson.getString("webhook");
+                        
+                        Object reqId = requestJson.getValue("reqid");
+                        if(reqId != null) {
+                            responseJson.put("reqid", reqId);
+                        }
+
+                        WebClient client = WebClient.create(WebViewServer.vertx());
+                        client.postAbs(webhookStr)
+                            .sendJsonObject(responseJson, ar -> {
+                                if(ar.failed()) {
+                                    System.err.println("WARNING: webhook post failed " +
+                                            webhookStr + ": " + ar.cause());
+                                } else {
+                                    HttpResponse<Buffer> response = ar.result();
+                                    if(response.statusCode() != HttpURLConnection.HTTP_OK) {
+                                        System.err.println("WARNING: webhook post failed (" +
+                                                response.statusCode() +
+                                                ") " + webhookStr + ":");
+                                        System.err.println(response.bodyAsString());
+                                    }
+                                             
+                                }
+                            });                        
+                        
+                    } else {                    
+                        future.complete(responseJson);
+                    }
+                    
+                } else { // asynchronous and no webhook           
                                         
                     final CompositeActor finalModel = model;
                     recorder.addPiggyback(new Recording() {
@@ -401,6 +453,7 @@ public class WebViewServer extends AbstractVerticle {
                         @Override
                         public void executionStop() {
                             removeModel(finalModel);
+                            
                         }
                     });
                     
@@ -410,7 +463,7 @@ public class WebViewServer extends AbstractVerticle {
                 future.fail("Error executing workflow: " + e.getMessage());
                 return;
             } finally {
-                if(model != null && runSynchronously) {
+                if(model != null && (runSynchronously || useWebHook)) {
                     removeModel(model);
                     model = null;
                 }
@@ -419,6 +472,7 @@ public class WebViewServer extends AbstractVerticle {
         // set ordered to false to allow parallel executions,
         // and use handler for result.    
         }, false, handler);
+            
     }
     
     /** Search for a file. The directories searched are the root directory (if specified),
