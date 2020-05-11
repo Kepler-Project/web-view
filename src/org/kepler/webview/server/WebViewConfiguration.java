@@ -29,9 +29,11 @@
 package org.kepler.webview.server;
 
 import java.io.File;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.httpclient.util.HttpURLConnection;
@@ -68,6 +70,24 @@ public class WebViewConfiguration {
         return _getConfigurationBoolean("server.ssl.enable", false);
     }
 
+    /** Returns any paramsets for a model. */
+    public static Map<String, String> getParamSetsForModel(String wfName) {
+        Map<String,String> paramSets = new HashMap<>();
+        
+        for(ConfigurationProperty property : _getConfigurationProperties("server.paramsets.set")) {
+            if(!property.containsProperty("type", false)) {
+                System.err.println("ERROR: missing type in paramset");
+            } else if(!property.containsProperty("default", false)) {
+                System.err.println("ERROR: missing default in paramset");
+            } else {
+                paramSets.put(property.getProperty("type").getValue(),
+                    property.getProperty("default").getValue());
+            }
+        }
+        
+        return paramSets;
+    }
+    
     /** Returns any models to be preloaded. */
     public static Set<String> getPreloadModels() {
         return _getConfigurationStrings("server.preload.model");        
@@ -446,5 +466,6 @@ public class WebViewConfiguration {
                 !typeStr.toLowerCase().equals("none") &&
                 !typeStr.toLowerCase().equals("false"));
     }
+
 
 }
