@@ -42,6 +42,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.stream.Collectors;
 
@@ -240,238 +242,247 @@ public class WebViewServer extends AbstractVerticle {
             return;
         }
         
-        // TODO correct way to convert Buffer to JSON?
-        //System.out.println("recvd: " + json);
-       
-        boolean useWebHook = requestJson.containsKey("webhook");
-        boolean runSynchronously = requestJson.getBoolean("sync", false);
-        boolean recordProvenance = requestJson.getBoolean("prov", true);
+        user.isAuthorized("executeWorkflow:" + wfName, resExec -> {
+            if(resExec.failed()) {
+                handler.handle(Future.failedFuture("User is not allowed to execute " + wfName));
+                return;
+            }
         
-        // cannot run async without provenance or webhook
-        if(!runSynchronously && !recordProvenance && !useWebHook) {
-            handler.handle(Future.failedFuture("Cannot execute workflow asynchronously " +
-                "without recording provenance or using webhook."));
-            return;
-        }
-        
-        // cannot run synchronously and use webhook
-        if(runSynchronously && useWebHook) {
-            handler.handle(Future.failedFuture("Cannot execute workflow synchronously " +
-                "and use webhook."));
-            return;
-        }
-        
-        // the following will block, e.g., waiting on the workspace lock,
-        // so execute in blocking threads.
-        _vertx.<JsonObject>executeBlocking(future -> {
-
-            //System.out.println("executeBlocking " + wfName);
+            // TODO correct way to convert Buffer to JSON?
+            //System.out.println("recvd: " + json);
+           
+            boolean useWebHook = requestJson.containsKey("webhook");
+            boolean runSynchronously = requestJson.getBoolean("sync", false);
+            boolean recordProvenance = requestJson.getBoolean("prov", true);
             
-            ProvenanceRecorder recorder = null;
-            CompositeActor model = null;
+            // cannot run async without provenance or webhook
+            if(!runSynchronously && !recordProvenance && !useWebHook) {
+                handler.handle(Future.failedFuture("Cannot execute workflow asynchronously " +
+                    "without recording provenance or using webhook."));
+                return;
+            }
             
-            // see if workflow is already loaded
-            try {
-                model = _getModel(wfName);
-
-                if(model == null) {
-                    throw new Exception("Workflow not found.");
-                }
+            // cannot run synchronously and use webhook
+            if(runSynchronously && useWebHook) {
+                handler.handle(Future.failedFuture("Cannot execute workflow synchronously " +
+                    "and use webhook."));
+                return;
+            }
+            
+            // the following will block, e.g., waiting on the workspace lock,
+            // so execute in blocking threads.
+            _vertx.<JsonObject>executeBlocking(future -> {
+    
+                //System.out.println("executeBlocking " + wfName);
+                
+                ProvenanceRecorder recorder = null;
+                CompositeActor model = null;
+                
+                // see if workflow is already loaded
+                try {
+                    model = _getModel(wfName);
+    
+                    if(model == null) {
+                        throw new Exception("Workflow not found.");
+                    }
+                                        
+                    try {
+                        _setModelParameters(wfName, model, requestJson, user);
+                    } catch (IllegalActionException e) {
+                        future.fail(e.getMessage());
+                        return;
+                    }
+                    
                                     
-                try {
-                    _setModelParameters(model, requestJson, user);
-                } catch (IllegalActionException e) {
-                    throw new Exception("Error setting parameters: " + e.getMessage());
-                }
-                
-                                
-                recorder = ProvenanceRecorder.getDefaultProvenanceRecorder(model);
-
-                if(recordProvenance) {
-                    if(recorder == null) {                        
-                        if(!ProvenanceRecorder.addProvenanceRecorder(model, null, null)) {                            
-                            throw new Exception("Error adding provenance recorder to workflow.");
-                        }
-                        recorder = ProvenanceRecorder.getDefaultProvenanceRecorder(model);
-                        if(recorder == null) {
-                            throw new Exception("Cannot find provenance recorder in workflow after adding one.");
-                        }
-                    }                    
-                    
-                    //System.out.println("setting provenance username = " + user.principal().getString("username"));
-                    recorder.username.setToken(user.principal().getString("username"));
-                } else if (recorder != null) {
-                    recorder.setContainer(null);
-                }
-                
-                // create manager and add model
-                final Manager manager = new Manager(model.workspace(), "Manager");
-
-                try {
-                    model.setManager(manager);
-                } catch(IllegalActionException e) {
-                    throw new Exception("Error setting Manager for sub-workflow: " + e.getMessage());
-                }    
-                
-                String[] errorMessage = new String[1];
-
-                ExecutionListener managerListener = new ExecutionListener() {
-                    
-                    @Override
-                    public void executionError(Manager m, Throwable throwable) {
-                        System.err.println("Workflow execution error: " + throwable.getMessage());
-                        throwable.printStackTrace();
-                        errorMessage[0] = throwable.getMessage();
-                    }
-
-                    @Override
-                    public void executionFinished(Manager m) {
-                        //System.out.println("finished");
-                    }
-
-                    @Override
-                    public void managerStateChanged(Manager m) {                    
-                        //System.out.println("manager state changed " + m.getState().getDescription());
-                    }
-                };
-                
-                manager.addExecutionListener(managerListener);
-                
-                if(runSynchronously || useWebHook) {
-                    
-                    final String[] runLSIDStr = new String[1];
-                    
+                    recorder = ProvenanceRecorder.getDefaultProvenanceRecorder(model);
+    
                     if(recordProvenance) {
+                        if(recorder == null) {                        
+                            if(!ProvenanceRecorder.addProvenanceRecorder(model, null, null)) {                            
+                                throw new Exception("Error adding provenance recorder to workflow.");
+                            }
+                            recorder = ProvenanceRecorder.getDefaultProvenanceRecorder(model);
+                            if(recorder == null) {
+                                throw new Exception("Cannot find provenance recorder in workflow after adding one.");
+                            }
+                        }                    
+                        
+                        //System.out.println("setting provenance username = " + user.principal().getString("username"));
+                        recorder.username.setToken(user.principal().getString("username"));
+                    } else if (recorder != null) {
+                        recorder.setContainer(null);
+                    }
+                    
+                    // create manager and add model
+                    final Manager manager = new Manager(model.workspace(), "Manager");
+    
+                    try {
+                        model.setManager(manager);
+                    } catch(IllegalActionException e) {
+                        throw new Exception("Error setting Manager for sub-workflow: " + e.getMessage());
+                    }    
+                    
+                    String[] errorMessage = new String[1];
+    
+                    ExecutionListener managerListener = new ExecutionListener() {
+                        
+                        @Override
+                        public void executionError(Manager m, Throwable throwable) {
+                            System.err.println("Workflow execution error: " + throwable.getMessage());
+                            throwable.printStackTrace();
+                            errorMessage[0] = throwable.getMessage();
+                        }
+    
+                        @Override
+                        public void executionFinished(Manager m) {
+                            //System.out.println("finished");
+                        }
+    
+                        @Override
+                        public void managerStateChanged(Manager m) {                    
+                            //System.out.println("manager state changed " + m.getState().getDescription());
+                        }
+                    };
+                    
+                    manager.addExecutionListener(managerListener);
+                    
+                    if(runSynchronously || useWebHook) {
+                        
+                        final String[] runLSIDStr = new String[1];
+                        
+                        if(recordProvenance) {
+                            recorder.addPiggyback(new Recording() {
+                                @Override
+                                public void executionStart(KeplerLSID lsid) {
+                                    runLSIDStr[0] = lsid.toString();
+                                }
+                            });
+                        }
+    
+                        final boolean[] timeout = new boolean[1];
+                        timeout[0] = false;
+                        long timerId = vertx.setTimer(_workflowTimeout, id -> {
+                            timeout[0] = true;
+                            manager.stop();
+                            future.fail("Execution timeout.");
+                        });
+                        
+                        // if using webhook, send response to client now that
+                        // workflow execution has started
+                        if(useWebHook) {
+                            handler.handle(Future.succeededFuture(new JsonObject()));
+                        }
+    
+    
+                        // call execute() instead of run, otherwise exceptions
+                        // go to execution listener asynchronously.
+                        manager.execute();
+                        
+                        // see if we timed-out. if so, we already sent the response,
+                        // so exit.
+                        if(timeout[0]) {
+                            return;
+                        } else if(!vertx.cancelTimer(timerId)) {
+                            System.err.println("Workflow timeout Timer does not exist.");
+                        } else { System.out.println("cancelled timer."); }
+                        
+                        // see if there is a workflow exception
+                        if(errorMessage[0] != null) {
+                            future.fail(errorMessage[0]);
+                            return;
+                        }
+                                                                            
+                        JsonObject responseJson = new JsonObject();
+    
+                        if(recordProvenance) {
+                            responseJson.put("id", runLSIDStr[0]);  
+                        }
+                        
+                        // build the response JSON object from the client buffers
+                        // for this workflow.
+                        JsonArray arrayJson = new JsonArray();
+                        List<JsonObject> outputs = getClientBuffer(model);
+                        if(outputs != null) {
+                            for(JsonObject outputJson : outputs) {
+                                if(outputJson.containsKey("actor")) {
+                                    JsonObject actorObject = outputJson.getJsonObject("actor");
+                                    for(String idStr : actorObject.fieldNames()) {
+                                        JsonObject idObject = actorObject.getJsonObject(idStr);
+                                        if(idObject.containsKey("data")) {
+                                            arrayJson.add(idObject.getJsonObject("data"));
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        // send the successful response
+                        //System.out.println(arrayJson.encodePrettily());
+                        responseJson.put("responses", arrayJson);
+                        
+                        if(useWebHook) {
+                            String webhookStr = requestJson.getString("webhook");
+                            
+                            Object reqId = requestJson.getValue("reqid");
+                            if(reqId != null) {
+                                responseJson.put("reqid", reqId);
+                            }
+    
+                            WebClient client = WebClient.create(WebViewServer.vertx());
+                            client.postAbs(webhookStr)
+                                .sendJsonObject(responseJson, ar -> {
+                                    if(ar.failed()) {
+                                        System.err.println("WARNING: webhook post failed " +
+                                                webhookStr + ": " + ar.cause());
+                                    } else {
+                                        HttpResponse<Buffer> response = ar.result();
+                                        if(response.statusCode() != HttpURLConnection.HTTP_OK) {
+                                            System.err.println("WARNING: webhook post failed (" +
+                                                    response.statusCode() +
+                                                    ") " + webhookStr + ":");
+                                            System.err.println(response.bodyAsString());
+                                        }
+                                                 
+                                    }
+                                });                        
+                            
+                        } else {                    
+                            future.complete(responseJson);
+                        }
+                        
+                    } else { // asynchronous and no webhook           
+                                            
+                        final CompositeActor finalModel = model;
                         recorder.addPiggyback(new Recording() {
                             @Override
                             public void executionStart(KeplerLSID lsid) {
-                                runLSIDStr[0] = lsid.toString();
+                                //System.out.println("execution lsid is " + lsid);
+                                future.complete(new JsonObject().put("id", lsid.toString()));
+                            }
+                                                                  
+                            @Override
+                            public void executionStop() {
+                                removeModel(finalModel);
+                                
                             }
                         });
-                    }
-
-                    final boolean[] timeout = new boolean[1];
-                    timeout[0] = false;
-                    long timerId = vertx.setTimer(_workflowTimeout, id -> {
-                        timeout[0] = true;
-                        manager.stop();
-                        future.fail("Execution timeout.");
-                    });
-                    
-                    // if using webhook, send response to client now that
-                    // workflow execution has started
-                    if(useWebHook) {
-                        handler.handle(Future.succeededFuture(new JsonObject()));
-                    }
-
-
-                    // call execute() instead of run, otherwise exceptions
-                    // go to execution listener asynchronously.
-                    manager.execute();
-                    
-                    // see if we timed-out. if so, we already sent the response,
-                    // so exit.
-                    if(timeout[0]) {
-                        return;
-                    } else if(!vertx.cancelTimer(timerId)) {
-                        System.err.println("Workflow timeout Timer does not exist.");
-                    } else { System.out.println("cancelled timer."); }
-                    
-                    // see if there is a workflow exception
-                    if(errorMessage[0] != null) {
-                        future.fail(errorMessage[0]);
-                        return;
-                    }
-                                                                        
-                    JsonObject responseJson = new JsonObject();
-
-                    if(recordProvenance) {
-                        responseJson.put("id", runLSIDStr[0]);  
-                    }
-                    
-                    // build the response JSON object from the client buffers
-                    // for this workflow.
-                    JsonArray arrayJson = new JsonArray();
-                    List<JsonObject> outputs = getClientBuffer(model);
-                    if(outputs != null) {
-                        for(JsonObject outputJson : outputs) {
-                            if(outputJson.containsKey("actor")) {
-                                JsonObject actorObject = outputJson.getJsonObject("actor");
-                                for(String idStr : actorObject.fieldNames()) {
-                                    JsonObject idObject = actorObject.getJsonObject(idStr);
-                                    if(idObject.containsKey("data")) {
-                                        arrayJson.add(idObject.getJsonObject("data"));
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    // send the successful response
-                    //System.out.println(arrayJson.encodePrettily());
-                    responseJson.put("responses", arrayJson);
-                    
-                    if(useWebHook) {
-                        String webhookStr = requestJson.getString("webhook");
                         
-                        Object reqId = requestJson.getValue("reqid");
-                        if(reqId != null) {
-                            responseJson.put("reqid", reqId);
-                        }
-
-                        WebClient client = WebClient.create(WebViewServer.vertx());
-                        client.postAbs(webhookStr)
-                            .sendJsonObject(responseJson, ar -> {
-                                if(ar.failed()) {
-                                    System.err.println("WARNING: webhook post failed " +
-                                            webhookStr + ": " + ar.cause());
-                                } else {
-                                    HttpResponse<Buffer> response = ar.result();
-                                    if(response.statusCode() != HttpURLConnection.HTTP_OK) {
-                                        System.err.println("WARNING: webhook post failed (" +
-                                                response.statusCode() +
-                                                ") " + webhookStr + ":");
-                                        System.err.println(response.bodyAsString());
-                                    }
-                                             
-                                }
-                            });                        
-                        
-                    } else {                    
-                        future.complete(responseJson);
+                        manager.startRun();
                     }
-                    
-                } else { // asynchronous and no webhook           
-                                        
-                    final CompositeActor finalModel = model;
-                    recorder.addPiggyback(new Recording() {
-                        @Override
-                        public void executionStart(KeplerLSID lsid) {
-                            //System.out.println("execution lsid is " + lsid);
-                            future.complete(new JsonObject().put("id", lsid.toString()));
-                        }
-                                                              
-                        @Override
-                        public void executionStop() {
-                            removeModel(finalModel);
-                            
-                        }
-                    });
-                    
-                    manager.startRun();
+                } catch (Exception e) {
+                    future.fail("Error executing workflow: " + e.getMessage());
+                    return;
+                } finally {
+                    if(model != null && (runSynchronously || useWebHook)) {
+                        removeModel(model);
+                        model = null;
+                    }
                 }
-            } catch (Exception e) {
-                future.fail("Error executing workflow: " + e.getMessage());
-                return;
-            } finally {
-                if(model != null && (runSynchronously || useWebHook)) {
-                    removeModel(model);
-                    model = null;
-                }
-            }
+                
+            // set ordered to false to allow parallel executions,
+            // and use handler for result.    
+            }, false, handler);
             
-        // set ordered to false to allow parallel executions,
-        // and use handler for result.    
-        }, false, handler);
+        });
             
     }
     
@@ -1318,8 +1329,81 @@ public class WebViewServer extends AbstractVerticle {
         }
     }
         
+    /** Set model parameters from json key-values. */
+    private static void _setModelParametersFromJson(NamedObj model, JsonObject params)
+        throws IllegalActionException {
+        
+        for(Map.Entry<String, Object> entry: params) {
+            final String paramName = entry.getKey();
+            //System.out.println("attempting to set parameter " + paramName);
+            Attribute attribute = model.getAttribute(paramName);
+            if(attribute == null || !(attribute instanceof Settable)) {
+                throw new IllegalActionException("Workflow does not have settable parameter " + paramName);
+            }
+
+            try {
+                String valueStr = _convertJSONToTokenString(entry.getValue());
+                ((Settable)attribute).setExpression(valueStr);
+                //System.out.println("set " + paramName + " = " + valueStr);
+            } catch (IllegalActionException e) {
+                throw new IllegalActionException("Error settings parameter " +
+                            paramName + ": " + e.getMessage());
+            }
+        }
+    }
+    
+    /** Set model parameters from a paramset
+     *  @param model the model
+     *  @param type the type of the paramset
+     *  @param value the value of the paramset
+     */  
+    private static void _setModelParametersFromMetadataParamSet(NamedObj model,
+        String type, String value) throws IllegalActionException {
+        
+        // make sure user paramset type is in metadata configuration
+        
+        CompletableFuture<AsyncResult<JsonObject>> metadataFuture =
+            new CompletableFuture<>();
+
+        Map<String,String> map = new HashMap<>();
+        map.put("paramset_type", type);
+        MetadataUtilities.getMetadataItem(value, "paramset", map)
+            .setHandler(res -> metadataFuture.complete(res));  
+        
+        AsyncResult<JsonObject> metadataResult = null;
+        
+        try {
+            metadataResult = metadataFuture.get();
+            if(metadataResult.failed()) {
+                throw new IllegalActionException("Error getting metadata: " +
+                    metadataResult.cause());
+            }
+        } catch (InterruptedException | ExecutionException e) {
+            throw new IllegalActionException("Error getting metadata: " +
+                e.getMessage());
+        }
+        
+        JsonObject metadata = metadataResult.result();
+        
+        if(!metadata.containsKey("private")) {
+            throw new IllegalActionException("paramset " + type +
+                " is missing private field");
+        }
+        if(!metadata.getJsonObject("private").containsKey("parameters")) {
+            throw new IllegalActionException("paramset " + type +
+                    " is missing private.parameters field");
+        }
+        
+        JsonObject parameters = metadata.getJsonObject("private")
+            .getJsonObject("parameters");
+
+        // set the parameters in the model for this paramset
+        _setModelParametersFromJson(model, parameters);
+
+    }
+    
     /** Set any parameters for a model from a JSON object. */
-    private static void _setModelParameters(NamedObj model, JsonObject json,
+    private static void _setModelParameters(String wfName, NamedObj model, JsonObject json,
         User user) throws IllegalActionException {
         
         // get any parameters
@@ -1331,24 +1415,77 @@ public class WebViewServer extends AbstractVerticle {
                 throw new IllegalActionException("wf_param must be a json object.");
             }
         
-            for(Map.Entry<String, Object> entry: params) {
-                final String paramName = entry.getKey();
-                //System.out.println("attempting to set parameter " + paramName);
-                Attribute attribute = model.getAttribute(paramName);
-                if(attribute == null || !(attribute instanceof Settable)) {
-                    throw new IllegalActionException("Workflow does not have settable parameter " + paramName);
-                }
-    
-                try {
-                    String valueStr = _convertJSONToTokenString(entry.getValue());
-                    ((Settable)attribute).setExpression(valueStr);
-                } catch (IllegalActionException e) {
-                    throw new IllegalActionException("Error settings parameter " +
-                                paramName + ": " + e.getMessage());
-                }
-            }
+            _setModelParametersFromJson(model, params);
         }
+               
+        // set any paramset parameters
+        
+        
+        // get any default paramsets
+        Map<String,String> paramSetsDefault = 
+            WebViewConfiguration.getParamSetsForModel(wfName);
+        
+        // get any paramsets from user request
+        JsonObject paramSetsUser = null;
+        if(json.containsKey("wf_paramset")) {
+            try {
+                paramSetsUser = json.getJsonObject("wf_paramset");
+            } catch(ClassCastException e) {
+                throw new IllegalActionException("wf_paramset must be a json object.");
+            }
+
+            //System.out.println("setting user-specified paramsets");
+
+            // check all user-specified paramsets
+            for(String paramSetType : paramSetsUser.fieldNames()) {
                 
+                // make sure user paramset type is in the default configuration
+                if(!paramSetsDefault.containsKey(paramSetType)) {
+                    throw new IllegalActionException("wf_paramset " +
+                            paramSetType + " not defined for model " + wfName);   
+                }
+                
+                String paramSetValue = paramSetsUser.getString(paramSetType);
+
+                // check user has permission to set this value for paramset
+                
+                CompletableFuture<AsyncResult<Boolean>> authFuture = 
+                    new CompletableFuture<>();
+                                
+                user.isAuthorized("paramset:" + paramSetType + ":" + paramSetValue,
+                    res -> authFuture.complete(res));
+                
+                try {
+                    AsyncResult<Boolean> authResult = authFuture.get();
+                    if(authResult.failed() || !authResult.result().booleanValue()) {
+                        throw new IllegalActionException("Permission denied setting paramset " +
+                                paramSetType + " to " + paramSetValue);
+                    }
+                } catch (InterruptedException | ExecutionException e) {
+                    throw new IllegalActionException("Error checking authorization: " +
+                        e.getMessage());
+                }
+
+                
+                _setModelParametersFromMetadataParamSet(model, paramSetType, paramSetValue);
+                
+                // delete this type from the default paramsets
+                paramSetsDefault.remove(paramSetType);
+                                
+            }
+                    
+        }
+        
+        // set the parameters in the model for any remaining default paramsets
+
+        System.out.println("setting default paramsets");
+        
+        for(Map.Entry<String, String> entry: paramSetsDefault.entrySet()) {                               
+            _setModelParametersFromMetadataParamSet(model, entry.getKey(),
+                entry.getValue());                                
+        }
+
+        
 
         // set user full name if present
         Attribute attribute = model.getAttribute("WebView_FullName");
