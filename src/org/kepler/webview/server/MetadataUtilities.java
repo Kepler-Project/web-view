@@ -28,6 +28,8 @@
  */
 package org.kepler.webview.server;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.kepler.webview.server.auth.AuthUtilities;
@@ -112,9 +114,9 @@ public class MetadataUtilities {
                                 _metadataJson = newMetadata;
                                 future.complete(_metadataJson.copy());
                             } catch(Throwable t) {
-                                future.fail(t.getMessage());
                                 System.err.println("Error reading metadata file " +
-                                    _metadataFileName + ": " + t.getMessage());
+                                        _metadataFileName + ": " + t);
+                                future.fail(t.getMessage());
                                 return;
                             }
                                                         
@@ -136,7 +138,18 @@ public class MetadataUtilities {
         return future;
     }
     
+    /** Get metadata item with name and type. */
     public static Future<JsonObject> getMetadataItem(String name, String type) {
+        return getMetadataItem(name, type, new HashMap<>());
+    }
+    
+    /** Get metadata item with name, type, and matching set of key-values.
+     *  @param name the name
+     *  @param type the type
+     *  @param map key-values to match.
+     */
+    public static Future<JsonObject> getMetadataItem(String name, String type, 
+            Map<String,String> map) {
         
         Future<JsonObject> future = Future.future();
         
@@ -150,10 +163,23 @@ public class MetadataUtilities {
                     JsonObject metadataItem = metadata.getJsonObject(i);
                     if(metadataItem.getString("name").equals(name) &&
                         metadataItem.getString("type").equals(type)) {
-                        future.complete(metadata.getJsonObject(i));
-                        break;
+                        
+                        boolean foundAll = true;
+                        for(Map.Entry<String,String> entry: map.entrySet()) {
+                            if(!metadataItem.containsKey(entry.getKey()) ||
+                                !metadataItem.getString(entry.getKey()).equals(entry.getValue())) {
+                                foundAll = false;
+                                break;
+                            }
+                        }
+                        
+                        if(foundAll) {
+                            future.complete(metadata.getJsonObject(i));
+                            return;
+                        }
                     }
                 }
+                future.fail("Could not find metdata name " + name + " type " + type);
             }                
         });
         
