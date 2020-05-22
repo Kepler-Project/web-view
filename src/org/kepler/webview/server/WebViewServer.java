@@ -269,6 +269,14 @@ public class WebViewServer extends AbstractVerticle {
                 return;
             }
             
+            if(useWebHook) {
+                JsonObject webHookJson = requestJson.getJsonObject("webhook");
+                if(!webHookJson.containsKey("url")) {
+                    handler.handle(Future.failedFuture("Webhook object must contain url."));
+                    return;
+                }
+            }
+            
             // the following will block, e.g., waiting on the workspace lock,
             // so execute in blocking threads.
             _vertx.<JsonObject>executeBlocking(future -> {
@@ -420,25 +428,31 @@ public class WebViewServer extends AbstractVerticle {
                         responseJson.put("responses", arrayJson);
                         
                         if(useWebHook) {
-                            String webhookStr = requestJson.getString("webhook");
+                            JsonObject webHookJson = requestJson.getJsonObject("webhook");
+                            String webHookURLStr = webHookJson.getString("url");
                             
                             Object reqId = requestJson.getValue("reqid");
                             if(reqId != null) {
                                 responseJson.put("reqid", reqId);
                             }
-    
+
+                            if(webHookJson.containsKey("secret")) {
+                                responseJson.put("secret", webHookJson.getString("secret"));
+                            }
+
+                            
                             WebClient client = WebClient.create(WebViewServer.vertx());
-                            client.postAbs(webhookStr)
+                            client.postAbs(webHookURLStr)
                                 .sendJsonObject(responseJson, ar -> {
                                     if(ar.failed()) {
                                         System.err.println("WARNING: webhook post failed " +
-                                                webhookStr + ": " + ar.cause());
+                                                webHookURLStr + ": " + ar.cause());
                                     } else {
                                         HttpResponse<Buffer> response = ar.result();
                                         if(response.statusCode() != HttpURLConnection.HTTP_OK) {
                                             System.err.println("WARNING: webhook post failed (" +
                                                     response.statusCode() +
-                                                    ") " + webhookStr + ":");
+                                                    ") " + webHookURLStr + ":");
                                             System.err.println(response.bodyAsString());
                                         }
                                                  
