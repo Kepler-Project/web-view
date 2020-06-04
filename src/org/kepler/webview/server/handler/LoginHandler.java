@@ -95,6 +95,13 @@ public class LoginHandler extends BaseHandler {
                     JsonArray returnMetadataJson = new JsonArray();
                     for(int i = 0; i < metadataJson.size(); i++) {
                         JsonObject m = metadataJson.getJsonObject(i);
+                        
+                        // do not include type = paramset metadata entries,
+                        // since these are not governed by groups.
+                        if(m.containsKey("type") && "paramset".equals(m.getString("type")) ) {
+                            continue;                        
+                        }
+                        
                         boolean inGroup = false;
                         if(!m.containsKey("groups")) {
                             inGroup = true;
