@@ -79,9 +79,14 @@ public class WebViewConfiguration {
                 System.err.println("ERROR: missing type in paramset");
             } else if(!property.containsProperty("default", false)) {
                 System.err.println("ERROR: missing default in paramset");
+            } else if(!property.containsProperty("model", false)) {
+                System.err.println("ERROR: missing model in paramset");
             } else {
-                paramSets.put(property.getProperty("type").getValue(),
-                    property.getProperty("default").getValue());
+                String modelStr = property.getProperty("model").getValue();
+                if(modelStr != null && modelStr.equals(wfName)) {                
+                    paramSets.put(property.getProperty("type").getValue(),
+                            property.getProperty("default").getValue());
+                }
             }
         }
         
