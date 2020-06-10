@@ -1492,7 +1492,7 @@ public class WebViewServer extends AbstractVerticle {
         
         // set the parameters in the model for any remaining default paramsets
 
-        System.out.println("setting default paramsets");
+        //System.out.println("setting default paramsets for " + wfName);
         
         for(Map.Entry<String, String> entry: paramSetsDefault.entrySet()) {                               
             _setModelParametersFromMetadataParamSet(model, entry.getKey(),
