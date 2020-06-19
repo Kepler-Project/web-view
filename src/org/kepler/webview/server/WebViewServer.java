@@ -372,7 +372,13 @@ public class WebViewServer extends AbstractVerticle {
                         long timerId = vertx.setTimer(_workflowTimeout, id -> {
                             timeout[0] = true;
                             manager.stop();
-                            future.fail("Execution timeout.");
+                            
+                            if(useWebHook) {
+                                _postToWebHook(requestJson,
+                                    new JsonObject().put("error", "Execution timeout."));
+                            } else {
+                                future.fail("Execution timeout.");
+                            }
                         });
                         
                         // if using webhook, send response to client now that
@@ -392,7 +398,9 @@ public class WebViewServer extends AbstractVerticle {
                             return;
                         } else if(!vertx.cancelTimer(timerId)) {
                             System.err.println("Workflow timeout Timer does not exist.");
-                        } else { System.out.println("cancelled timer."); }
+                        }/* else { 
+                            System.out.println("cancelled timer."); 
+                        }*/
                         
                         // see if there is a workflow exception
                         if(errorMessage[0] != null) {
@@ -428,37 +436,7 @@ public class WebViewServer extends AbstractVerticle {
                         responseJson.put("responses", arrayJson);
                         
                         if(useWebHook) {
-                            JsonObject webHookJson = requestJson.getJsonObject("webhook");
-                            String webHookURLStr = webHookJson.getString("url");
-                            
-                            Object reqId = requestJson.getValue("reqid");
-                            if(reqId != null) {
-                                responseJson.put("reqid", reqId);
-                            }
-
-                            if(webHookJson.containsKey("secret")) {
-                                responseJson.put("secret", webHookJson.getString("secret"));
-                            }
-
-                            
-                            WebClient client = WebClient.create(WebViewServer.vertx());
-                            client.postAbs(webHookURLStr)
-                                .sendJsonObject(responseJson, ar -> {
-                                    if(ar.failed()) {
-                                        System.err.println("WARNING: webhook post failed " +
-                                                webHookURLStr + ": " + ar.cause());
-                                    } else {
-                                        HttpResponse<Buffer> response = ar.result();
-                                        if(response.statusCode() != HttpURLConnection.HTTP_OK) {
-                                            System.err.println("WARNING: webhook post failed (" +
-                                                    response.statusCode() +
-                                                    ") " + webHookURLStr + ":");
-                                            System.err.println(response.bodyAsString());
-                                        }
-                                                 
-                                    }
-                                });                        
-                            
+                            _postToWebHook(requestJson, responseJson);                            
                         } else {                    
                             future.complete(responseJson);
                         }
@@ -498,6 +476,40 @@ public class WebViewServer extends AbstractVerticle {
             
         });
             
+    }
+    
+    private void _postToWebHook(JsonObject requestJson, JsonObject responseJson) {
+        
+        JsonObject webHookJson = requestJson.getJsonObject("webhook");
+        String webHookURLStr = webHookJson.getString("url");
+        
+        Object reqId = requestJson.getValue("reqid");
+        if(reqId != null) {
+            responseJson.put("reqid", reqId);
+        }
+
+        if(webHookJson.containsKey("secret")) {
+            responseJson.put("secret", webHookJson.getString("secret"));
+        }
+
+        
+        WebClient client = WebClient.create(WebViewServer.vertx());
+        client.postAbs(webHookURLStr)
+            .sendJsonObject(responseJson, ar -> {
+                if(ar.failed()) {
+                    System.err.println("WARNING: webhook post failed " +
+                            webHookURLStr + ": " + ar.cause());
+                } else {
+                    HttpResponse<Buffer> response = ar.result();
+                    if(response.statusCode() != HttpURLConnection.HTTP_OK) {
+                        System.err.println("WARNING: webhook post failed (" +
+                                response.statusCode() +
+                                ") " + webHookURLStr + ":");
+                        System.err.println(response.bodyAsString());
+                    }
+                             
+                }
+            });     
     }
     
     /** Search for a file. The directories searched are the root directory (if specified),
