@@ -390,7 +390,14 @@ public class WebViewServer extends AbstractVerticle {
     
                         // call execute() instead of run, otherwise exceptions
                         // go to execution listener asynchronously.
-                        manager.execute();
+                        try {
+                            manager.execute();
+                        } catch(Exception e) {
+                            if(!vertx.cancelTimer(timerId)) {
+                                System.err.println("Workflow timeout Timer does not exist.");
+                            }
+                            throw e;
+                        }
                         
                         // see if we timed-out. if so, we already sent the response,
                         // so exit.
@@ -404,6 +411,7 @@ public class WebViewServer extends AbstractVerticle {
                         
                         // see if there is a workflow exception
                         if(errorMessage[0] != null) {
+                            System.err.println("errorMessage = " + errorMessage);
                             future.fail(errorMessage[0]);
                             return;
                         }
@@ -1355,8 +1363,18 @@ public class WebViewServer extends AbstractVerticle {
         }
     }
         
-    /** Set model parameters from json key-values. */
-    private static void _setModelParametersFromJson(NamedObj model, JsonObject params)
+    /** Set model parameters from json key-values.
+     *  @param model the model
+     *  @param params a set of parameters to set in the model
+     *  @param jsonValueObjectsAreRanges if true, any value in params that
+     *  is an JSONObject is checked for "min" and "max" keys, which are then
+     *  used to validate the corresponding value in alreadySetParams.
+     *  @param alreadySetParams a set of parameters already set in the model
+     *  
+     */
+    private static void _setModelParametersFromJson(NamedObj model,
+            JsonObject params, boolean jsonValueObjectsAreRanges,
+            JsonObject alreadySetParams)
         throws IllegalActionException {
         
         for(Map.Entry<String, Object> entry: params) {
@@ -1367,8 +1385,42 @@ public class WebViewServer extends AbstractVerticle {
                 throw new IllegalActionException("Workflow does not have settable parameter " + paramName);
             }
 
+            Object paramValue = entry.getValue();
+            
+            if(jsonValueObjectsAreRanges && (paramValue instanceof JsonObject)) {
+                
+                JsonObject paramValueJsonObject = ((JsonObject)paramValue);
+
+                if(alreadySetParams != null && alreadySetParams.containsKey(paramName)) {
+                
+                    Double alreadySetValue = alreadySetParams.getDouble(paramName);                
+    
+                    // check min/max range
+    
+                    if(paramValueJsonObject.containsKey("max") &&                                        
+                        paramValueJsonObject.getDouble("max") < alreadySetValue) {
+                        throw new IllegalActionException("Maximum value for " +
+                            paramName + " is " + paramValueJsonObject.getValue("max"));                                      
+                    } else if(paramValueJsonObject.containsKey("min") &&
+                            paramValueJsonObject.getDouble("min") > alreadySetValue) {
+                        throw new IllegalActionException("Minimum value for " +
+                                paramName + " is " + paramValueJsonObject.getValue("min"));                                      
+                    } else {
+                        // don't need to set the value again
+                        continue;
+                    }
+                                        
+                    
+                } else if(!paramValueJsonObject.containsKey("default")) {
+                    throw new IllegalActionException("No default value for " + paramName);
+                } else {
+                    paramValue = paramValueJsonObject.getValue("default");
+                }
+                                
+            }
+            
             try {
-                String valueStr = _convertJSONToTokenString(entry.getValue());
+                String valueStr = _convertJSONToTokenString(paramValue);
                 ((Settable)attribute).setExpression(valueStr);
                 //System.out.println("set " + paramName + " = " + valueStr);
             } catch (IllegalActionException e) {
@@ -1382,9 +1434,12 @@ public class WebViewServer extends AbstractVerticle {
      *  @param model the model
      *  @param type the type of the paramset
      *  @param value the value of the paramset
+     *  @param alreadySetParams the set of parameters specified by the user
+     *  already set in the model.
      */  
     private static void _setModelParametersFromMetadataParamSet(NamedObj model,
-        String type, String value) throws IllegalActionException {
+        String type, String value, JsonObject alreadySetParams)
+            throws IllegalActionException {
         
         // make sure user paramset type is in metadata configuration
         
@@ -1420,34 +1475,49 @@ public class WebViewServer extends AbstractVerticle {
                     " is missing private.parameters field");
         }
         
+        
+        // first set public parameters, then private ones
+        
+        // check any parameters specified by the user that have a range
+        // in the paramset.
+        if(metadata.containsKey("range")) {
+            _setModelParametersFromJson(model, metadata.getJsonObject("range"),
+                true, alreadySetParams);
+        }
+        
+        
+        // set private parameters in the paramset. this will override any
+        // parameters with the same name specified by the user.
+        
         JsonObject parameters = metadata.getJsonObject("private")
             .getJsonObject("parameters");
 
         // set the parameters in the model for this paramset
-        _setModelParametersFromJson(model, parameters);
+        _setModelParametersFromJson(model, parameters, false, null);
 
     }
     
     /** Set any parameters for a model from a JSON object. */
     private static void _setModelParameters(String wfName, NamedObj model, JsonObject json,
         User user) throws IllegalActionException {
-        
-        // get any parameters
-        JsonObject params = null;
+                
+        // get any parameters specified by the user
+        JsonObject userParams = null;
         if(json.containsKey("wf_param")) {
             try {
-                params = json.getJsonObject("wf_param");
+                userParams = json.getJsonObject("wf_param");
             } catch(ClassCastException e) {
                 throw new IllegalActionException("wf_param must be a json object.");
             }
         
-            _setModelParametersFromJson(model, params);
+            // set user-specified parameters in the model
+            _setModelParametersFromJson(model, userParams, false, null);
         }
                
         // set any paramset parameters
         
         
-        // get any default paramsets
+        // get any default paramsets for this model
         Map<String,String> paramSetsDefault = 
             WebViewConfiguration.getParamSetsForModel(wfName);
         
@@ -1492,8 +1562,9 @@ public class WebViewServer extends AbstractVerticle {
                         e.getMessage());
                 }
 
-                
-                _setModelParametersFromMetadataParamSet(model, paramSetType, paramSetValue);
+                // set parameters in model from this parameter set
+                _setModelParametersFromMetadataParamSet(model, paramSetType,
+                    paramSetValue, userParams);
                 
                 // delete this type from the default paramsets
                 paramSetsDefault.remove(paramSetType);
@@ -1508,7 +1579,7 @@ public class WebViewServer extends AbstractVerticle {
         
         for(Map.Entry<String, String> entry: paramSetsDefault.entrySet()) {                               
             _setModelParametersFromMetadataParamSet(model, entry.getKey(),
-                entry.getValue());                                
+                entry.getValue(), userParams);                                
         }
 
         
