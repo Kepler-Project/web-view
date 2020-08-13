@@ -66,6 +66,7 @@ import org.kepler.webview.server.app.App;
 import org.kepler.webview.server.auth.AuthUtilities;
 import org.kepler.webview.server.auth.WebViewAuthHandlerImpl;
 import org.kepler.webview.server.handler.ActorHandler;
+import org.kepler.webview.server.handler.AuthenticatedProxyHandler;
 import org.kepler.webview.server.handler.LoginHandler;
 import org.kepler.webview.server.handler.NoMatchHandler;
 import org.kepler.webview.server.handler.RunIdHandler;
@@ -73,7 +74,6 @@ import org.kepler.webview.server.handler.RunWorkflowHandler;
 import org.kepler.webview.server.handler.RunsHandler;
 import org.kepler.webview.server.handler.TableOfContentsHandler;
 import org.kepler.webview.server.handler.WorkflowHandler;
-import org.kepler.webview.server.handler.WorkflowWebSocketHandler;
 
 import com.hazelcast.config.Config;
 
@@ -1007,6 +1007,16 @@ public class WebViewServer extends AbstractVerticle {
             router.getWithRegex(path).handler(new TableOfContentsHandler(this));
         }
         
+        // add any authenticated proxies
+        for(String path: WebViewConfiguration.getHttpServerAuthenticatedProxyPaths()) {
+            router.route(path)
+                .handler(authenticationHandler)
+                .handler(authorizationHandler)
+                .handler(new AuthenticatedProxyHandler(path));
+        }
+
+        
+        
         // add route that handles anything unmatched
         router.route().handler(new NoMatchHandler(this));
                 
@@ -1038,7 +1048,8 @@ public class WebViewServer extends AbstractVerticle {
             System.out.println("Starting secure web server on port " + securePort);
             
             _secureServer = vertx.createHttpServer(options)
-                    .websocketHandler(new WorkflowWebSocketHandler(this))
+                    // TODO had to comment out for AuthenticatedProxyHandler
+                    //.websocketHandler(new WorkflowWebSocketHandler(this))
                     .requestHandler(router::accept)
                     .listen();
            
@@ -1071,7 +1082,8 @@ public class WebViewServer extends AbstractVerticle {
             System.out.println("Starting web view server on port " + port);
 
             _server = vertx.createHttpServer()
-                .websocketHandler(new WorkflowWebSocketHandler(this))
+                // TODO had to comment out for AuthenticatedProxyHandler
+                //.websocketHandler(new WorkflowWebSocketHandler(this))
                 .requestHandler(router::accept)
                 .listen(port);
         }

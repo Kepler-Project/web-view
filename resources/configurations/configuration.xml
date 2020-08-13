@@ -39,6 +39,16 @@
             </app>
         </apps>
 
+        <proxies>
+            <!--
+            <proxy>
+                <path>/path</path>
+                <dest>wss://host:port</dest>
+                <apikey>12345</apikey>
+            </proxy>
+            -->
+        </proxies>
+
         <ssl>
             <enable>false</enable>
             <port>8443</port>

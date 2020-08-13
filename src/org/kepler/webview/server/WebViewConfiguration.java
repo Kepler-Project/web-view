@@ -200,6 +200,53 @@ public class WebViewConfiguration {
     public static boolean getHttpServerAppendIndexHtml() {
         return _getConfigurationBoolean("server.appendIndexHtml", false);
     }
+    
+    /** Get all the paths for the authenticated proxies.
+     *  Also performs checks for missing fields in the configuration.
+     */
+    public static Set<String> getHttpServerAuthenticatedProxyPaths() {
+        Set<String> paths = new HashSet<String>();
+        for(ConfigurationProperty proxy: _getConfigurationProperties("server.proxies.proxy")) {
+            if(!proxy.containsProperty("path", false) ||
+                    proxy.getProperty("path").getValue() == null ||
+                    proxy.getProperty("path").getValue().trim().isEmpty()) {
+                System.err.println("WARNING: server proxy is missing path.");
+            } else if(!proxy.containsProperty("dest", false) ||
+                    proxy.getProperty("dest").getValue() == null ||
+                    proxy.getProperty("dest").getValue().trim().isEmpty()) {
+                System.err.println("WARNING: server proxy for " +
+                    proxy.getProperty("path").getValue() + " is missing dest.");
+            } else if(!proxy.containsProperty("apikey", false) ||
+                    proxy.getProperty("apikey").getValue() == null ||
+                    proxy.getProperty("apikey").getValue().trim().isEmpty()) {
+                System.err.println("WARNING: server proxy for " +
+                    proxy.getProperty("path").getValue() + " is missing apikey.");
+            } else {
+                paths.add(proxy.getProperty("path").getValue());
+            }
+        }
+        return paths;
+    }
+    
+    /** Get the api key for an authenticated proxy. */
+    public static String getHttpServerAuthenticatedProxyApiKey(String path) {
+        for(ConfigurationProperty proxy: _getConfigurationProperty("server.proxies").getProperties()) {
+            if(proxy.getProperty("path").getValue().equals(path)) {
+                return proxy.getProperty("apikey").getValue();
+            }
+        }        
+        return null;
+    }
+    
+    /** Get the destinated uri for an authenticated proxy. */
+    public static String getHttpServerAuthenticatedProxyURL(String path) {
+        for(ConfigurationProperty proxy: _getConfigurationProperty("server.proxies").getProperties()) {
+            if(proxy.getProperty("path").getValue().equals(path)) {
+                return proxy.getProperty("dest").getValue();
+            }
+        }        
+        return null;
+    }
         
     /** Get list of server directories that can be indexed. */
     public static Set<String> getHttpServerDirectoriesToIndex() {
