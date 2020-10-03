@@ -82,10 +82,20 @@ public class AuthenticatedProxyHandler implements Handler<RoutingContext> {
             if(uri.getScheme().equals("wss")) {
                 options.setSsl(true);
             }
+
+            int port;
+
+            if(uri.getPort() != -1) {
+                port = uri.getPort();
+            } else if(uri.getScheme().equals("wss")) {
+                port = 443;
+            } else {
+                port = 80;
+            }
             
             WebViewServer.vertx()
                 .createHttpClient(options)
-                .websocket(uri.getPort(), uri.getHost(),
+                .websocket(port, uri.getHost(),
                 uriPath, destWS -> {
                 
                 //System.out.println("connected");
