@@ -351,9 +351,11 @@ public class WebViewServer extends AbstractVerticle {
                             //System.out.println("manager state changed " + m.getState().getDescription());
                         }
                     };
+
                     
                     manager.addExecutionListener(managerListener);
-                    
+
+                                        
                     if(runSynchronously || useWebHook) {
                         
                         final String[] runLSIDStr = new String[1];
@@ -396,6 +398,11 @@ public class WebViewServer extends AbstractVerticle {
                             if(!vertx.cancelTimer(timerId)) {
                                 System.err.println("Workflow timeout Timer does not exist.");
                             }
+                            else if(useWebHook) {
+                                _postToWebHook(requestJson,
+                                    new JsonObject().put("error", "Execution error:" + e.getMessage()));  
+                                return;
+                            }
                             throw e;
                         }
                         
@@ -411,6 +418,11 @@ public class WebViewServer extends AbstractVerticle {
                         
                         // see if there is a workflow exception
                         if(errorMessage[0] != null) {
+                            if(useWebHook) {
+                                _postToWebHook(requestJson,
+                                    new JsonObject().put("error", "Execution error: " + errorMessage[0]));
+                                return;
+                            }
                             System.err.println("errorMessage = " + errorMessage);
                             future.fail(errorMessage[0]);
                             return;
@@ -470,6 +482,7 @@ public class WebViewServer extends AbstractVerticle {
                     }
                 } catch (Exception e) {
                     future.fail("Error executing workflow: " + e.getMessage());
+//                    e.printStackTrace();
                     return;
                 } finally {
                     if(model != null && (runSynchronously || useWebHook)) {
