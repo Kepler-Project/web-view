@@ -108,20 +108,37 @@ public class AuthenticatedProxyHandler implements Handler<RoutingContext> {
                                                    
                     /*Pump pump1 =*/ Pump.pump(destWS, serverWS).start();
                     /*Pump pump2 =*/ Pump.pump(serverWS, destWS).start();
+                    
+                    //System.out.println("started pumps");
     
-                    /* TODO need to stop pumps?
+                    // TODO need to stop pumps?
                     destWS.closeHandler(h -> {
-                        pump1.stop();
-                        pump2.stop();
-                        serverWS.close();
+                        //System.out.println("destWS ch");
+                        try {
+                            // attempt to close other side
+                            serverWS.close();
+                        } catch(Exception e) {
+                            String msg = e.getMessage();
+                            // ignore exception if already closed
+                            if(msg != null && !msg.equals("WebSocket is closed")) {
+                                System.err.println("failed to close serverWS " + e.getMessage());
+                            }
+                        }
                     });
                     
                     serverWS.closeHandler(h -> {
-                        pump1.stop();
-                        pump2.stop();
-                        destWS.close();                    
+                        //System.out.println("serverWS ch");
+                        try {
+                            // attempt to close other side
+                            destWS.close();     
+                        } catch(Exception e) {
+                            String msg = e.getMessage();
+                            // ignore exception if already closed
+                            if(msg != null && !msg.equals("WebSocket is closed")) {
+                                System.err.println("failed to close destWS " + e.getMessage());
+                            }
+                        }                        
                     });
-                    */                                
             });
             
         }       
