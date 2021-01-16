@@ -1042,11 +1042,19 @@ public class WebViewServer extends AbstractVerticle {
                 throw new Exception("Must specify PEM key file for HTTPS server.");
             }
             
+            if(!new File(pemKeyStr).canRead()) {
+                throw new Exception("Cannot read PEM key file for HTTPS server: " + pemKeyStr);
+            }
+            
             String pemCertStr = WebViewConfiguration.getHttpsPEMCertPath();
             if(pemCertStr == null) {
                 throw new Exception("Must specify PEM certificate file for HTTPS server.");                
             }
-            
+
+            if(!new File(pemCertStr).canRead()) {
+                throw new Exception("Cannot read PEM certificate file for HTTPS server: " + pemCertStr);
+            }
+
             int securePort = WebViewConfiguration.getHttpsServerPort();
             
             // FIXME what if pemCert or pemKey do not exist?
