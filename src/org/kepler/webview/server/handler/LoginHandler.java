@@ -104,7 +104,7 @@ public class LoginHandler extends BaseHandler {
                         boolean inGroup = false;
                         if(!m.containsKey("groups")) {
                             inGroup = true;
-                        } else {
+                        } else if(returnJson.containsKey("groups")) {
                             JsonArray groupsList = m.getJsonArray("groups");
                             for(int j = 0; j < groupsList.size(); j++) {
                                 for(Object g: returnJson.getJsonArray("groups")) {
