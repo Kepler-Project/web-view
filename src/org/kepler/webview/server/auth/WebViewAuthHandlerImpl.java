@@ -87,6 +87,11 @@ public class WebViewAuthHandlerImpl extends BasicAuthHandlerImpl {
           context.fail(400);
         } else {
           JsonObject authInfo = new JsonObject().put("username", suser).put("password", spass);
+          
+          if(request.headers().contains(HEADER_NAMESPACE)) {
+             authInfo.put("namespace", request.getHeader(HEADER_NAMESPACE));
+          }
+                    
           authProvider.authenticate(authInfo, res -> {
             if (res.succeeded()) {
               User authenticated = res.result();
@@ -123,4 +128,6 @@ public class WebViewAuthHandlerImpl extends BasicAuthHandlerImpl {
         .putHeader("Content-type", "text/plain");
     context.fail(401);
   }
+  
+  private static final String HEADER_NAMESPACE = "WebView-Namespace";
 }
