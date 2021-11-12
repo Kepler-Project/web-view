@@ -74,9 +74,13 @@ public class MetadataUtilities {
                 return true;
             } else {                    
                 JsonArray metadataGroups = metadataItem.getJsonArray("groups");
-                for(int i = 0; i < metadataGroups.size(); i++) {
-                    if(userGroups.contains(metadataGroups.getString(i))) {
-                        return true;
+                if(metadataGroups == null) {
+                    System.err.println("WARNING: no permission groups for " + metadataItem);
+                } else {
+                    for(int i = 0; i < metadataGroups.size(); i++) {
+                        if(userGroups.contains(metadataGroups.getString(i))) {
+                            return true;
+                        }
                     }
                 }
             }
