@@ -976,27 +976,12 @@ public class WebViewServer extends AbstractVerticle {
             router.route("/login").handler(loginHandler);
                         
             // login session handler to check if session cookie is valid.
-            /*
             router.route("/loginSession")
-                .handler(authorizationHandler)
-                .handler(loginSessionContext -> {
-                
-                System.out.println("session " + loginSessionContext.session().id());
-                
-                // if not valid, return 400
-                if(loginSessionContext.user() == null) {
-                    System.out.println("user is null");
-                    loginSessionContext.response()
-                        .putHeader("Content-Type", "text/plain")
-                        .setStatusCode(HttpURLConnection.HTTP_BAD_REQUEST)
-                        .end();
-                } else {
-                    // otherwise call login handler to return metadata.
-                    loginSessionContext.next();
-                }
-            });
-            router.route("/loginSession").handler(loginHandler);
-            */
+                .handler(authenticationHandler)            
+                .handler(authorizationHandler);
+        
+            LoginHandler loginSessionHandler = new LoginHandler(this);
+                router.route("/loginSession").handler(loginSessionHandler);
             
             // logout handler to remove session and user.
             router.route("/logout").handler(authenticationHandler);
