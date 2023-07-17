@@ -543,6 +543,11 @@ public class WebViewServer extends AbstractVerticle {
         
         //System.out.println("findFile: " + name);
         
+        // prevent access to git/svn files.
+        if(name.contains(".git") || name.contains(".svn")) {
+            return null;
+        }
+        
         if(_appendIndexHtml && name.endsWith("/")) {
             name = name.concat("index.html");
         }
